@@ -391,7 +391,6 @@ class RAD_GUI_FACTORY():
         strCurrentName = ""
         strCurrentType = ""
         dictParams = {}
-        objCurrentProperty = None
 
         print("Building Properties-")
         print(str(dictInput))
@@ -411,6 +410,9 @@ class RAD_GUI_FACTORY():
             return clsResult
 
         #We got here, so we must be doing something right
+
+        #Properties are defined through annotations rather than declarations
+        dictAttributes["__annotations__"] = {}
 
         #Domain - Where these properties can be found
         dictAttributes["strPropertyDomain"] = dictInput["DOMAIN"]
@@ -438,9 +440,8 @@ class RAD_GUI_FACTORY():
             strCurrentName = dictIndex["NAME"]
             strCurrentType = dictIndex["TYPE"].upper()
             dictParams.clear()
-            objCurrentProperty = None
 
-            #Add Property based on Type
+            #Set Parameter Defaults
             if (strCurrentType == "STRING"):
                 dictParams = {
                     "DEFAULT":"",
@@ -448,18 +449,6 @@ class RAD_GUI_FACTORY():
                     "DESCRIPTION":"",
                     "TEXT":""
                 }
-
-                if ("DEFAULT" in dictIndex):
-                    dictParams["DEFAULT"] = str(dictIndex["DEFAULT"])
-                if ("LENGTH_MAX" in dictIndex):
-                    dictParams["LENGTH_MAX"] = int(dictIndex["LENGTH_MAX"])
-                if ("DESCRIPTION" in dictIndex):
-                    dictParams["DESCRIPTION"] = str(dictIndex["DESCRIPTION"])
-                if ("TEXT" in dictIndex):
-                    dictParams["TEXT"] = str(dictIndex["TEXT"])
-
-                objCurrentProperty = StringProperty(name= dictParams["TEXT"], description=dictParams["DESCRIPTION"], default=dictParams["DEFAULT"], maxlen=dictParams["LENGTH_MAX"])
-                print("Created String Property >>>" + str(objCurrentProperty))
 
             elif (strCurrentType == "INTEGER"):
                 dictParams = {
@@ -472,26 +461,6 @@ class RAD_GUI_FACTORY():
                     "DESCRIPTION":"",
                     "TEXT":""
                 }
-
-                if ("DEFAULT" in dictIndex):
-                    dictParams["DEFAULT"] = int(dictIndex["DEFAULT"])
-                if ("HARD_MIN" in dictIndex):
-                    dictParams["HARD_MIN"] = int(dictIndex["HARD_MIN"])
-                if ("HARD_MAX" in dictIndex):
-                    dictParams["HARD_MAX"] = int(dictIndex["HARD_MAX"])
-                if ("SOFT_MIN" in dictIndex):
-                    dictParams["SOFT_MIN"] = int(dictIndex["SOFT_MIN"])
-                if ("SOFT_MAX" in dictIndex):
-                    dictParams["SOFT_MAX"] = int(dictIndex["SOFT_MAX"])
-                if ("STEP" in dictIndex):
-                    dictParams["STEP"] = int(dictIndex["STEP"])
-                if ("DESCRIPTION" in dictIndex):
-                    dictParams["DESCRIPTION"] = str(dictIndex["DESCRIPTION"])
-                if ("TEXT" in dictIndex):
-                    dictParams["TEXT"] = str(dictIndex["TEXT"])
-
-                objCurrentProperty = IntProperty(name= dictParams["TEXT"], description=dictParams["DESCRIPTION"], default=dictParams["DEFAULT"], min=dictParams["SOFT_MIN"], max=dictParams["HARD_MAX"], soft_min=dictParams["SOFT_MIN"], soft_max=dictParams["SOFT_MAX"], step= dictParams["STEP"])
-                print("Created Int Property >>>" + str(objCurrentProperty))
 
             elif (strCurrentType == "FLOAT"):
                 dictParams = {
@@ -506,54 +475,71 @@ class RAD_GUI_FACTORY():
                     "TEXT":""
                 }
 
-                if ("DEFAULT" in dictIndex):
-                    dictParams["DEFAULT"] = float(dictIndex["DEFAULT"])
-                if ("HARD_MIN" in dictIndex):
-                    dictParams["HARD_MIN"] = float(dictIndex["HARD_MIN"])
-                if ("HARD_MAX" in dictIndex):
-                    dictParams["HARD_MAX"] = float(dictIndex["HARD_MAX"])
-                if ("SOFT_MIN" in dictIndex):
-                    dictParams["SOFT_MIN"] = float(dictIndex["SOFT_MIN"])
-                if ("SOFT_MAX" in dictIndex):
-                    dictParams["SOFT_MAX"] = float(dictIndex["SOFT_MAX"])
-                if ("STEP" in dictIndex):
-                    dictParams["STEP"] = int(dictIndex["STEP"])
-                if ("PRECISION" in dictIndex):
-                    dictParams["PRECISION"] = int(dictIndex["PRECISION"])
-                if ("DESCRIPTION" in dictIndex):
-                    dictParams["DESCRIPTION"] = str(dictIndex["DESCRIPTION"])
-                if ("TEXT" in dictIndex):
-                    dictParams["TEXT"] = str(dictIndex["TEXT"])
-
-                objCurrentProperty = FloatProperty(name=dictParams["TEXT"], description=dictParams["DESCRIPTION"], default=dictParams["DEFAULT"], min=dictParams["HARD_MIN"], max=dictParams["HARD_MAX"], soft_min=dictParams["SOFT_MIN"], soft_max=dictParams["SOFT_MAX"], step=dictParams["STEP"], precision=dictParams["PRECISION"])
-                print("Created Float Property >>>" + str(objCurrentProperty))
-
             elif (strCurrentType == "BOOL") or (strCurrentType == "BOOLEAN"):
                 dictParams = {
                     "DEFAULT":False,
                     "DESCRIPTION":"",
                     "TEXT":""
                 }
+            
+            else:
+                continue
 
-                if ("DEFAULT" in dictIndex):
-                    dictParams["DEFAULT"] = bool(dictIndex["DEFAULT"])
-                if ("DESCRIPTION" in dictIndex):
-                    dictParams["DESCRIPTION"] = str(dictIndex["DESCRIPTION"])
-                if ("TEXT" in dictIndex):
-                    dictParams["TEXT"] = str(dictIndex["TEXT"])
+            #Override DictParams
+            for strParamsIndex in dictParams:
+                if (strParamsIndex in dictIndex):
+                    dictParams[strParamsIndex] = dictIndex[strParamsIndex]
 
-                objCurrentProperty = BoolProperty(name=dictParams["TEXT"], description=dictParams["DESCRIPTION"], default= dictParams["DEFAULT"])
-                print("Created Boolean Property >>>" + str(objCurrentProperty))
+            #Annotate the current property based on the type again
+            if (strCurrentType == "STRING"):
+                print("Adding a String")
+                dictAttributes["__annotations__"][strCurrentName] = StringProperty(
+                    name= dictParams["TEXT"],
+                    description=dictParams["DESCRIPTION"],
+                    default=dictParams["DEFAULT"],
+                    maxlen=dictParams["LENGTH_MAX"]
+                )
 
-            #If we made an object, add it to the class attributes
-            if(objCurrentProperty != None):
-                print("Property Added to Attributes")
-                dictAttributes[strCurrentName] = objCurrentProperty
+            elif (strCurrentType == "INTEGER"):
+                print("Adding an Integer")
+                dictAttributes["__annotations__"][strCurrentName] = IntProperty(
+                    name= dictParams["TEXT"],
+                    description=dictParams["DESCRIPTION"],
+                    default=dictParams["DEFAULT"],
+                    min=dictParams["SOFT_MIN"],
+                    max=dictParams["HARD_MAX"],
+                    soft_min=dictParams["SOFT_MIN"],
+                    soft_max=dictParams["SOFT_MAX"],
+                    step= dictParams["STEP"]
+                )
+                
+            elif (strCurrentType == "FLOAT"):
+                print("Adding a Float")
+                dictAttributes["__annotations__"][strCurrentName] = FloatProperty(
+                    name=dictParams["TEXT"],
+                    description=dictParams["DESCRIPTION"],
+                    default=dictParams["DEFAULT"],
+                    min=dictParams["HARD_MIN"],
+                    max=dictParams["HARD_MAX"],
+                    soft_min=dictParams["SOFT_MIN"],
+                    soft_max=dictParams["SOFT_MAX"],
+                    step=dictParams["STEP"],
+                    precision=dictParams["PRECISION"]
+                )
+                
+            elif (strCurrentType == "BOOL") or (strCurrentType == "BOOLEAN"):
+                print("Adding a Boolean")
+                dictAttributes["__annotations__"][strCurrentName] = BoolProperty(
+                    name=dictParams["TEXT"],
+                    description=dictParams["DESCRIPTION"],
+                    default= dictParams["DEFAULT"]
+                )
 
             print("Registering Properties Group with the following attributes:")
             print(str(dictAttributes))
 
-        clsResult = type(strClassName,(PropertyGroupShell,),dictAttributes)
+            clsResult = type(strClassName,(PropertyGroupShell,),dictAttributes)
+
         return clsResult
 
     @classmethod
