@@ -13,17 +13,23 @@ bl_info = {
 #Import Libraries
 import bpy
 import os
-from .RADGUI import RAD_GUI_FACTORY
+from .RADGUI import RADGUI_FACTORY, RADGUI_CONSOLE
 
 #Do some global activities here like loading the JSON Panel File
 strCurrentFolder = os.path.dirname(__file__)
-RAD_GUI_FACTORY.LoadJSON(os.path.join(strCurrentFolder,"TestPanel.JSON"))
+RADGUI_FACTORY.LoadJSON(os.path.join(strCurrentFolder,"TestPanel.JSON"))
+
+#Limit the Output of the console by setting a TAG Filter
+RADGUI_CONSOLE.OutputFilter = {
+    "RADGUI_FACTORY":0,
+    "RADGUI_ENGINE":0
+}
 
 def register():
-    RAD_GUI_FACTORY.register()
+    RADGUI_FACTORY.register()
 
 def unregister():
-    RAD_GUI_FACTORY.unregister()
+    RADGUI_FACTORY.unregister()
 
 if __name__ == "__main__":
     register()

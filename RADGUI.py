@@ -1,6 +1,7 @@
 import bpy, json
 from bpy.props import StringProperty, IntProperty, FloatProperty, BoolProperty, PointerProperty
 from bpy.types import Operator, PropertyGroup, Panel
+from typing import List, Dict, Any
 
 #==================================================#
 #RAD GUI
@@ -18,9 +19,6 @@ from bpy.types import Operator, PropertyGroup, Panel
 #DEVELOPED BY:
 #[Name] * [Contact]
 #   Ilobmirt * ilobmirt@gmail.com
-#
-#REVISION:
-#   v1.0 * 2020 AUGUST 01
 #==================================================#
 
 
@@ -55,7 +53,8 @@ class PropertyGroupShell(PropertyGroup):
 class OperatorShell(Operator):
     
     def CompiledExecute(self,context):
-        print("Button "+str(self.__class__)+" Pressed!")
+        RADGUI_CONSOLE.WriteTags = {"OPERATOR",1}
+        RADGUI_CONSOLE.Write("Button "+str(self.__class__)+" Pressed!")
 
     def execute(self,context):
         self.CompiledExecute(context)
@@ -65,7 +64,7 @@ class OperatorShell(Operator):
 #Panel Shell Class
 #==================================================#
 class PanelShell(Panel):
-    arrContent = []
+    arrContent: List[Dict[str, Any]] = []
 
     #Footnote to be replaced with a generated function
     def CompiledDraw(self,context):
@@ -75,20 +74,48 @@ class PanelShell(Panel):
     def draw(self,context):
         #Content array holds priority over a compiled draw function
         if (self.arrContent != []):
-            RAD_GUI_FACTORY.DrawJSONInterpreter(self,context,self.arrContent)
+            RADGUI_ENGINE.Draw(self,context,self.arrContent)
         else:
             self.CompiledDraw(context)                        
 
 #==================================================#
-#RAD GUI Factory
+#RAD GUI Console
 #==================================================#
 
-class RAD_GUI_FACTORY():
-    dictJSONContent = {}
-    arrDynamicClasses = []
-    arrManualClasses = []
+class RADGUI_CONSOLE():
+    OutputFilter: Dict[str,int] = {}
+    WriteTags: Dict[str,int] = {}
 
-    def DrawJSONInterpreter(source,context,dictInstructions = {}):
+    @classmethod
+    def Write(cls,input: str) -> None:
+
+        CanWrite: bool = False
+        Index: str = ""
+
+        #Determine if message is to be written in screen
+        #No filter = All Permitted
+        if(len(cls.OutputFilter) > 0):
+            for Index in cls.WriteTags:
+                if (Index in cls.OutputFilter):
+                    if (cls.WriteTags[Index] <= cls.OutputFilter[Index]):
+                        CanWrite = True
+                        break
+        else:
+            CanWrite = True
+
+        if(CanWrite == True):
+            print(input)
+
+#==================================================#
+#RAD GUI Engine
+#==================================================#
+class RADGUI_ENGINE():
+    @classmethod
+    def Draw(cls,source,context,dictInstructions: List[Dict[str, Any]] = []) -> None:
+
+        #Console Filter
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_ENGINE":1}
+
         #Layout Related Variables
         layout = source.layout
         row = None
@@ -173,217 +200,252 @@ class RAD_GUI_FACTORY():
                 #We make an Operator
                 elif strCurrentType == "OPERATOR":
                     
-                    #Define Operator Defaults
-                    dictAttributes = {
-                        "CLASS":"",
-                        "TEXT":"",
-                        "TEXT_CTXT":"",
-                        "TRANSLATE":True,
-                        "ICON":"NONE",
-                        "EMBOSS":True,
-                        "DEPRESS":False,
-                        "ICON_VALUE":0
-                    }
-
-                    #Required Attribute - Class Name
-                    if "CLASS" not in dictIndex:
-                        print("(OPERATOR) Required Attribute Missing: \"CLASS\"")
-                        continue
-                    elif str(dictIndex["CLASS"]).strip() == "":
-                        print("(OPERATOR) Required Attribute - \"CLASS\" is blank")
-                        continue
-                    else:
-                        dictAttributes["CLASS"] = str(dictIndex["CLASS"]).lower()
-
-                    if "TEXT" in dictIndex:
-                        if str(dictIndex["TEXT"]).strip() != "":
-                            dictAttributes["TEXT"] = str(dictIndex["TEXT"]).strip()
-                    if "TEXT_CTXT" in dictIndex:
-                        if str(dictIndex["TEXT_CTXT"]).strip() != "":
-                            dictAttributes["TEXT_CTXT"] = str().strip(dictIndex["TEXT_CTXT"])
-                    if "TRANSLATE" in dictIndex:
-                        dictAttributes["TRANSLATE"] = bool(dictIndex["TRANSLATE"])
-                    if "ICON" in dictIndex:
-                        if str(dictIndex["ICON"]).strip() != "":
-                            dictAttributes["ICON"] = str(dictIndex["ICON"]).strip().upper()
-                    if "EMBOSS" in dictIndex:
-                        dictAttributes["EMBOSS"] = bool(dictIndex["EMBOSS"])
-                    if "DEPRESS" in dictIndex:
-                        dictAttributes["DEPRESS"] = bool(dictIndex["DEPRESS"])
-                    if "ICON_VALUE" in dictIndex:
-                        dictAttributes["ICON_VALUE"] = int(dictIndex["ICON_VALUE"])
-
-                    objCurrentAction = objContext.operator(
-                        dictAttributes["CLASS"],
-                        text = dictAttributes["TEXT"],
-                        text_ctxt = dictAttributes["TEXT_CTXT"],
-                        translate = dictAttributes["TRANSLATE"],
-                        icon = dictAttributes["ICON"],
-                        emboss = dictAttributes["EMBOSS"],
-                        depress = dictAttributes["DEPRESS"],
-                        icon_value = dictAttributes["ICON_VALUE"]
-                        )
+                    cls.WriteOperator(objContext,dictIndex)
 
                 #We make a Label
                 elif strCurrentType == "LABEL":
 
-                    #Define Label Defaults
-                    dictAttributes = {
-                        "TEXT":"",
-                        "TEXT_CTXT":"",
-                        "TRANSLATE":True,
-                        "ICON":"NONE",
-                        "ICON_VALUE":0
-                    }
-
-                    #Required Attribute - Text
-                    if "TEXT" not in dictIndex:
-                        print("(LABEL) Required Attribute Missing: \"TEXT\"")
-                        continue
-                    elif str(dictIndex["TEXT"]).strip() == "":
-                        print("(LABEL) Required Attribute - \"TEXT\" is blank")
-                        continue
-                    else:
-                        dictAttributes["TEXT"] = str(dictIndex["TEXT"]).lower()
-
-                    if "TEXT_CTXT" in dictIndex:
-                        if str(dictIndex["TEXT_CTXT"]).strip() != "":
-                            dictAttributes["TEXT_CTXT"] = str().strip(dictIndex["TEXT_CTXT"])
-                    if "TRANSLATE" in dictIndex:
-                        dictAttributes["TRANSLATE"] = bool(dictIndex["TRANSLATE"])
-                    if "ICON" in dictIndex:
-                        if str(dictIndex["ICON"]).strip() != "":
-                            dictAttributes["ICON"] = str(dictIndex["ICON"]).strip().upper()
-                    if "ICON_VALUE" in dictIndex:
-                        dictAttributes["ICON_VALUE"] = int(dictIndex["ICON_VALUE"])
-
-                    objContext.label(
-                        text = dictAttributes["TEXT"],
-                        text_ctxt = dictAttributes["TEXT_CTXT"],
-                        translate = dictAttributes["TRANSLATE"],
-                        icon = dictAttributes["ICON"],
-                        icon_value = dictAttributes["ICON_VALUE"]
-                        )
+                    cls.WriteLabel(objContext,dictIndex)
 
                 #We make a property
                 elif strCurrentType == "PROPERTY":
-                    print ('TYPE: Property')
+                    
+                    cls.WriteProperty(objContext,context,dictIndex)
 
-                    #Define Property Defaults
-                    dictAttributes = {
-                        "VARIABLE":[],
-                        "DATA":None,
-                        "TEXT":"",
-                        "TEXT_CTXT":"",
-                        "TRANSLATE":True,
-                        "ICON":"NONE",
-                        "EXPAND":False,
-                        "SLIDER":False,
-                        "TOGGLE":-1,
-                        "ICON_ONLY":False,
-                        "EVENT":False,
-                        "FULL_EVENT":False,
-                        "EMBOSS":True,
-                        "INDEX":-1,
-                        "ICON_VALUE":0,
-                        "INVERT_CHECKBOX":False
-                    }
+    @classmethod
+    def WriteOperator(cls,context,command: Dict[str, Any] = {}) -> None:
+        
+        #Console Filter
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_ENGINE":2}
 
-                    #Required Attribute - Variable
-                    if "VARIABLE" not in dictIndex:
-                        print("(PROPERTY) Required Attribute Missing: \"VARIABLE\"")
-                        continue
-                    elif str(dictIndex["VARIABLE"]).strip() == "" :
-                        print("(PROPERTY) Required Attribute \"VARIABLE\" is Blank")
-                        continue
-                    else:
-                        print ('(PROPERTY) Variable = \"'+str(dictIndex["VARIABLE"])+'\"')
-                        #Get the scope, domain, and variable
-                        dictAttributes["VARIABLE"] = str(dictIndex["VARIABLE"]).strip().split(".")
-                        #We need to be sure at least a variable and domain were defined
-                        if (len(dictAttributes["VARIABLE"]) != 2) and (len(dictAttributes["VARIABLE"]) != 3):
-                            print("(PROPERTY) Required Attribute \"VARIABLE\" needs to be of format \'[SCOPE.]DOMAIN.VARIABLE\'")
-                            continue
-                        #Default Scope will be "SCENE"
-                        elif len(dictAttributes["VARIABLE"]) == 2:
-                            dictAttributes["VARIABLE"].insert(0,"SCENE")
-                        #Just keep scope upper case
-                        else:
-                            dictAttributes["VARIABLE"][0] = str(dictAttributes["VARIABLE"][0]).upper()
+        #Define Operator Defaults
+        dictAttributes = {
+            "CLASS":"",
+            "TEXT":"",
+            "TEXT_CTXT":"",
+            "TRANSLATE":True,
+            "ICON":"NONE",
+            "EMBOSS":True,
+            "DEPRESS":False,
+            "ICON_VALUE":0
+        }
 
-                        #Given SCOPE.DOMAIN.VARIABLE , verify domain exists in scope
-                        if (dictAttributes["VARIABLE"][0] == "SCENE"):
-                            if (hasattr(bpy.types.Scene,dictAttributes["VARIABLE"][1]) == False):
-                                print("(PROPERTY) The Domain \""+dictAttributes["VARIABLE"][1]+"\" in Required Attribute \"VARIABLE\" is not Present in the scene scope")
-                                continue
-                            else:
-                                dictAttributes["DATA"] = getattr(context.scene,dictAttributes["VARIABLE"][1])
+        #Required Attribute - Class Name
+        if "CLASS" not in command:
+            RADGUI_CONSOLE.Write("(OPERATOR) Required Attribute Missing: \"CLASS\"")
+            return
+        elif str(command["CLASS"]).strip() == "":
+            RADGUI_CONSOLE.Write("(OPERATOR) Required Attribute - \"CLASS\" is blank")
+            return
+        else:
+            dictAttributes["CLASS"] = str(command["CLASS"]).lower()
 
-                        elif (dictAttributes["VARIABLE"][0] == "OBJECT"):
-                            if (hasattr(bpy.types.Object,dictAttributes["VARIABLE"][1]) == False):
-                                print("(PROPERTY) The Domain \""+dictAttributes["VARIABLE"][1]+"\" in Required Attribute \"VARIABLE\" is not Present in the object scope")
-                                continue
-                            else:
-                                dictAttributes["DATA"] = getattr(context.object,dictAttributes["VARIABLE"][1])
+        if "TEXT" in command:
+            if str(command["TEXT"]).strip() != "":
+                dictAttributes["TEXT"] = str(command["TEXT"]).strip()
+        if "TEXT_CTXT" in command:
+            if str(command["TEXT_CTXT"]).strip() != "":
+                dictAttributes["TEXT_CTXT"] = str().strip(command["TEXT_CTXT"])
+        if "TRANSLATE" in command:
+            dictAttributes["TRANSLATE"] = bool(command["TRANSLATE"])
+        if "ICON" in command:
+            if str(command["ICON"]).strip() != "":
+                dictAttributes["ICON"] = str(command["ICON"]).strip().upper()
+        if "EMBOSS" in command:
+            dictAttributes["EMBOSS"] = bool(command["EMBOSS"])
+        if "DEPRESS" in command:
+            dictAttributes["DEPRESS"] = bool(command["DEPRESS"])
+        if "ICON_VALUE" in command:
+            dictAttributes["ICON_VALUE"] = int(command["ICON_VALUE"])
 
-                        else:
-                            print("(PROPERTY) Required Attribute \"VARIABLE\" uses an unknown scope \""+dictAttributes["VARIABLE"][0]+"\"")
-                            continue
+        objCurrentAction = context.operator(
+            dictAttributes["CLASS"],
+            text = dictAttributes["TEXT"],
+            text_ctxt = dictAttributes["TEXT_CTXT"],
+            translate = dictAttributes["TRANSLATE"],
+            icon = dictAttributes["ICON"],
+            emboss = dictAttributes["EMBOSS"],
+            depress = dictAttributes["DEPRESS"],
+            icon_value = dictAttributes["ICON_VALUE"]
+            )
 
-                        #Fill out variables if defined
-                        if "TEXT" in dictIndex:
-                            if str(dictIndex["TEXT"]).strip() != "":
-                                dictAttributes["TEXT"] = str(dictIndex["TEXT"]).strip()
-                        if "TEXT_CTXT" in dictIndex:
-                            if str(dictIndex["TEXT_CTXT"]).strip() != "":
-                                dictAttributes["TEXT_CTXT"] = str().strip(dictIndex["TEXT_CTXT"])
-                        if "TRANSLATE" in dictIndex:
-                            dictAttributes["TRANSLATE"] = bool(dictIndex["TRANSLATE"])
-                        if "ICON" in dictIndex:
-                            if str(dictIndex["ICON"]).strip() != "":
-                                dictAttributes["ICON"] = str(dictIndex["ICON"]).strip().upper()
-                        if "EXPAND" in dictIndex:
-                            dictAttributes["EXPAND"] = bool(dictIndex["EXPAND"])
-                        if "SLIDER" in dictIndex:
-                            dictAttributes["SLIDER"] = bool(dictIndex["SLIDER"])
-                        if "TOGGLE" in dictIndex:
-                            dictAttributes["TOGGLE"] = int(dictIndex["TOGGLE"])
-                        if "ICON_ONLY" in dictIndex:
-                            dictAttributes["ICON_ONLY"] = bool(dictIndex["ICON_ONLY"])
-                        if "EVENT" in dictIndex:
-                            dictAttributes["EVENT"] = bool(dictIndex["EVENT"])
-                        if "FULL_EVENT" in dictIndex:
-                            dictAttributes["FULL_EVENT"] = bool(dictIndex["FULL_EVENT"])
-                        if "EMBOSS" in dictIndex:
-                            dictAttributes["EMBOSS"] = bool(dictIndex["EMBOSS"])
-                        if "INDEX" in dictIndex:
-                            dictAttributes["INDEX"] = int(dictIndex["INDEX"])
-                        if "ICON_VALUE" in dictIndex:
-                            dictAttributes["ICON_VALUE"] = int(dictIndex["ICON_VALUE"])
-                        if "INVERT_CHECKBOX" in dictIndex:
-                            dictAttributes["INVERT_CHECKBOX"] = bool(dictIndex["INVERT_CHECKBOX"])
+    @classmethod
+    def WriteProperty(cls,ContextObject,ContextEnvironment,command: Dict[str, Any] = {}) -> None:
+        
+        #Console Filter
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_ENGINE":2}
 
-                        objContext.prop(
-                            dictAttributes["DATA"],
-                            dictAttributes["VARIABLE"][2],
-                            text = dictAttributes["TEXT"],
-                            text_ctxt = dictAttributes["TEXT_CTXT"],
-                            translate = dictAttributes["TRANSLATE"],
-                            icon = dictAttributes["ICON"],
-                            expand = dictAttributes["EXPAND"],
-                            slider = dictAttributes["SLIDER"],
-                            toggle = dictAttributes["TOGGLE"],
-                            icon_only = dictAttributes["ICON_ONLY"],
-                            event = dictAttributes["EVENT"],
-                            full_event = dictAttributes["FULL_EVENT"],
-                            emboss = dictAttributes["EMBOSS"],
-                            index = dictAttributes["INDEX"],
-                            icon_value = dictAttributes["ICON_VALUE"],
-                            invert_checkbox = dictAttributes["INVERT_CHECKBOX"]
-                        )
+        #Define Property Defaults
+        dictAttributes = {
+            "VARIABLE":[],
+            "DATA":None,
+            "TEXT":"",
+            "TEXT_CTXT":"",
+            "TRANSLATE":True,
+            "ICON":"NONE",
+            "EXPAND":False,
+            "SLIDER":False,
+            "TOGGLE":-1,
+            "ICON_ONLY":False,
+            "EVENT":False,
+            "FULL_EVENT":False,
+            "EMBOSS":True,
+            "INDEX":-1,
+            "ICON_VALUE":0,
+            "INVERT_CHECKBOX":False
+        }
+
+        #Required Attribute - Variable
+        if "VARIABLE" not in command:
+            RADGUI_CONSOLE.Write("(PROPERTY) Required Attribute Missing: \"VARIABLE\"")
+            return
+        elif str(command["VARIABLE"]).strip() == "" :
+            RADGUI_CONSOLE.Write("(PROPERTY) Required Attribute \"VARIABLE\" is Blank")
+            return
+        else:
+            RADGUI_CONSOLE.Write('(PROPERTY) Variable = \"'+str(command["VARIABLE"])+'\"')
+            #Get the scope, domain, and variable
+            dictAttributes["VARIABLE"] = str(command["VARIABLE"]).strip().split(".")
+            #We need to be sure at least a variable and domain were defined
+            if (len(dictAttributes["VARIABLE"]) != 2) and (len(dictAttributes["VARIABLE"]) != 3):
+                RADGUI_CONSOLE.Write("(PROPERTY) Required Attribute \"VARIABLE\" needs to be of format \'[SCOPE.]DOMAIN.VARIABLE\'")
+                return
+            #Default Scope will be "SCENE"
+            elif len(dictAttributes["VARIABLE"]) == 2:
+                dictAttributes["VARIABLE"].insert(0,"SCENE")
+            #Just keep scope upper case
+            else:
+                dictAttributes["VARIABLE"][0] = str(dictAttributes["VARIABLE"][0]).upper()
+
+            #Given SCOPE.DOMAIN.VARIABLE , verify domain exists in scope
+            if (dictAttributes["VARIABLE"][0] == "SCENE"):
+                if (hasattr(bpy.types.Scene,dictAttributes["VARIABLE"][1]) == False):
+                    RADGUI_CONSOLE.Write("(PROPERTY) The Domain \""+dictAttributes["VARIABLE"][1]+"\" in Required Attribute \"VARIABLE\" is not Present in the scene scope")
+                    return
+                else:
+                    dictAttributes["DATA"] = getattr(ContextEnvironment.scene,dictAttributes["VARIABLE"][1])
+
+            elif (dictAttributes["VARIABLE"][0] == "OBJECT"):
+                if (hasattr(bpy.types.Object,dictAttributes["VARIABLE"][1]) == False):
+                    RADGUI_CONSOLE.Write("(PROPERTY) The Domain \""+dictAttributes["VARIABLE"][1]+"\" in Required Attribute \"VARIABLE\" is not Present in the object scope")
+                    return
+                else:
+                    dictAttributes["DATA"] = getattr(ContextEnvironment.object,dictAttributes["VARIABLE"][1])
+
+            else:
+                RADGUI_CONSOLE.Write("(PROPERTY) Required Attribute \"VARIABLE\" uses an unknown scope \""+dictAttributes["VARIABLE"][0]+"\"")
+                return
+
+            #Fill out variables if defined
+            if "TEXT" in command:
+                if str(command["TEXT"]).strip() != "":
+                    dictAttributes["TEXT"] = str(command["TEXT"]).strip()
+            if "TEXT_CTXT" in command:
+                if str(command["TEXT_CTXT"]).strip() != "":
+                    dictAttributes["TEXT_CTXT"] = str().strip(command["TEXT_CTXT"])
+            if "TRANSLATE" in command:
+                dictAttributes["TRANSLATE"] = bool(command["TRANSLATE"])
+            if "ICON" in command:
+                if str(command["ICON"]).strip() != "":
+                    dictAttributes["ICON"] = str(command["ICON"]).strip().upper()
+            if "EXPAND" in command:
+                dictAttributes["EXPAND"] = bool(command["EXPAND"])
+            if "SLIDER" in command:
+                dictAttributes["SLIDER"] = bool(command["SLIDER"])
+            if "TOGGLE" in command:
+                dictAttributes["TOGGLE"] = int(command["TOGGLE"])
+            if "ICON_ONLY" in command:
+                dictAttributes["ICON_ONLY"] = bool(command["ICON_ONLY"])
+            if "EVENT" in command:
+                dictAttributes["EVENT"] = bool(command["EVENT"])
+            if "FULL_EVENT" in command:
+                dictAttributes["FULL_EVENT"] = bool(command["FULL_EVENT"])
+            if "EMBOSS" in command:
+                dictAttributes["EMBOSS"] = bool(command["EMBOSS"])
+            if "INDEX" in command:
+                dictAttributes["INDEX"] = int(command["INDEX"])
+            if "ICON_VALUE" in command:
+                dictAttributes["ICON_VALUE"] = int(command["ICON_VALUE"])
+            if "INVERT_CHECKBOX" in command:
+                dictAttributes["INVERT_CHECKBOX"] = bool(command["INVERT_CHECKBOX"])
+
+            ContextObject.prop(
+                dictAttributes["DATA"],
+                dictAttributes["VARIABLE"][2],
+                text = dictAttributes["TEXT"],
+                text_ctxt = dictAttributes["TEXT_CTXT"],
+                translate = dictAttributes["TRANSLATE"],
+                icon = dictAttributes["ICON"],
+                expand = dictAttributes["EXPAND"],
+                slider = dictAttributes["SLIDER"],
+                toggle = dictAttributes["TOGGLE"],
+                icon_only = dictAttributes["ICON_ONLY"],
+                event = dictAttributes["EVENT"],
+                full_event = dictAttributes["FULL_EVENT"],
+                emboss = dictAttributes["EMBOSS"],
+                index = dictAttributes["INDEX"],
+                icon_value = dictAttributes["ICON_VALUE"],
+                invert_checkbox = dictAttributes["INVERT_CHECKBOX"]
+            )
+
+    @classmethod
+    def WriteLabel(cls,context,command: Dict[str, Any] = {}) -> None:
+
+        #Console Filter
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_ENGINE":2}
+
+        #Define Label Defaults
+        dictAttributes = {
+            "TEXT":"",
+            "TEXT_CTXT":"",
+            "TRANSLATE":True,
+            "ICON":"NONE",
+            "ICON_VALUE":0
+        }
+
+        #Required Attribute - Text
+        if "TEXT" not in command:
+            RADGUI_CONSOLE.Write("(LABEL) Required Attribute Missing: \"TEXT\"")
+            return
+        elif str(command["TEXT"]).strip() == "":
+            RADGUI_CONSOLE.Write("(LABEL) Required Attribute - \"TEXT\" is blank")
+            return
+        else:
+            dictAttributes["TEXT"] = str(command["TEXT"]).lower()
+
+        if "TEXT_CTXT" in command:
+            if str(command["TEXT_CTXT"]).strip() != "":
+                dictAttributes["TEXT_CTXT"] = str().strip(command["TEXT_CTXT"])
+        if "TRANSLATE" in command:
+            dictAttributes["TRANSLATE"] = bool(command["TRANSLATE"])
+        if "ICON" in command:
+            if str(command["ICON"]).strip() != "":
+                dictAttributes["ICON"] = str(command["ICON"]).strip().upper()
+        if "ICON_VALUE" in command:
+            dictAttributes["ICON_VALUE"] = int(command["ICON_VALUE"])
+
+        context.label(
+            text = dictAttributes["TEXT"],
+            text_ctxt = dictAttributes["TEXT_CTXT"],
+            translate = dictAttributes["TRANSLATE"],
+            icon = dictAttributes["ICON"],
+            icon_value = dictAttributes["ICON_VALUE"]
+            )
+
+#==================================================#
+#RAD GUI Factory
+#==================================================#
+
+class RADGUI_FACTORY():
+    dictJSONContent = {}
+    arrDynamicClasses = []
+    arrManualClasses = []
 
     @classmethod
     def BuildProperties(cls,dictInput):
+
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_FACTORY":2}
+
         clsResult = None
         dictAttributes = {}
         strClassName = "PROPERTIES_" + str(len(cls.arrDynamicClasses)) + "_DYNAMIC"
@@ -392,8 +454,8 @@ class RAD_GUI_FACTORY():
         strCurrentType = ""
         dictParams = {}
 
-        print("Building Properties-")
-        print(str(dictInput))
+        RADGUI_CONSOLE.Write("Building Properties-")
+        RADGUI_CONSOLE.Write(str(dictInput))
 
         #To-Do: Build Class Attributes
         #If it doesnt have a type, domain, and content it's not a property group
@@ -426,15 +488,15 @@ class RAD_GUI_FACTORY():
         #Loop through each property
         for dictIndex in dictInput["CONTENT"]:
 
-            print("Index - value=\""+str(dictIndex)+"\" type=\""+str(type(dictIndex))+"\"")
+            RADGUI_CONSOLE.Write("Index - value=\""+str(dictIndex)+"\" type=\""+str(type(dictIndex))+"\"")
 
             #We add only variables with a name and a type
             if("NAME" not in dictIndex) or ("TYPE" not in dictIndex):
-                print("Left without Name or Type")
+                RADGUI_CONSOLE.Write("Left without Name or Type")
                 continue
             #And no, it cant be empty
             elif (dictIndex["NAME"].strip() == "") or (dictIndex["TYPE"].strip() == ""):
-                print("Left because Name or Type is empty")
+                RADGUI_CONSOLE.Write("Left because Name or Type is empty")
                 continue
 
             strCurrentName = dictIndex["NAME"]
@@ -492,7 +554,7 @@ class RAD_GUI_FACTORY():
 
             #Annotate the current property based on the type again
             if (strCurrentType == "STRING"):
-                print("Adding a String")
+                RADGUI_CONSOLE.Write("Adding a String")
                 dictAttributes["__annotations__"][strCurrentName] = StringProperty(
                     name= dictParams["TEXT"],
                     description=dictParams["DESCRIPTION"],
@@ -501,7 +563,7 @@ class RAD_GUI_FACTORY():
                 )
 
             elif (strCurrentType == "INTEGER"):
-                print("Adding an Integer")
+                RADGUI_CONSOLE.Write("Adding an Integer")
                 dictAttributes["__annotations__"][strCurrentName] = IntProperty(
                     name= dictParams["TEXT"],
                     description=dictParams["DESCRIPTION"],
@@ -514,7 +576,7 @@ class RAD_GUI_FACTORY():
                 )
                 
             elif (strCurrentType == "FLOAT"):
-                print("Adding a Float")
+                RADGUI_CONSOLE.Write("Adding a Float")
                 dictAttributes["__annotations__"][strCurrentName] = FloatProperty(
                     name=dictParams["TEXT"],
                     description=dictParams["DESCRIPTION"],
@@ -528,15 +590,15 @@ class RAD_GUI_FACTORY():
                 )
                 
             elif (strCurrentType == "BOOL") or (strCurrentType == "BOOLEAN"):
-                print("Adding a Boolean")
+                RADGUI_CONSOLE.Write("Adding a Boolean")
                 dictAttributes["__annotations__"][strCurrentName] = BoolProperty(
                     name=dictParams["TEXT"],
                     description=dictParams["DESCRIPTION"],
                     default= dictParams["DEFAULT"]
                 )
 
-            print("Registering Properties Group with the following attributes:")
-            print(str(dictAttributes))
+            RADGUI_CONSOLE.Write("Registering Properties Group with the following attributes:")
+            RADGUI_CONSOLE.Write(str(dictAttributes))
 
             clsResult = type(strClassName,(PropertyGroupShell,),dictAttributes)
 
@@ -544,12 +606,15 @@ class RAD_GUI_FACTORY():
 
     @classmethod
     def BuildOperator(cls,dictInput):
+
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_FACTORY":2}
+
         clsResult = None
         dictAttributes = {}
         strClassName = "OPERATOR_OT_" + str(len(cls.arrDynamicClasses)) + "_DYNAMIC"
 
-        print("Building Operator-")
-        print(str(dictInput))
+        RADGUI_CONSOLE.Write("Building Operator-")
+        RADGUI_CONSOLE.Write(str(dictInput))
 
         #To-Do: Build Class Attributes
         #If it doesnt have a type, text, class, and domain, it's not an operator
@@ -572,12 +637,15 @@ class RAD_GUI_FACTORY():
 
     @classmethod
     def BuildPanel(cls,dictInput):
+
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_FACTORY":2}
+
         clsResult = None
         dictAttributes = {}
         strClassName = "PANEL_PT_"+ str(len(cls.arrDynamicClasses)) + "_DYNAMIC"
 
-        print("Building PANEL-")
-        print(str(dictInput))
+        RADGUI_CONSOLE.Write("Building PANEL-")
+        RADGUI_CONSOLE.Write(str(dictInput))
 
         #To-Do: Build Class Attributes
         #If it doesnt have a Type, Space, Region, and Content, it's not a panel
@@ -621,9 +689,6 @@ class RAD_GUI_FACTORY():
                     cls.dictJSONContent = json.load(fileInput)
             except:
                 return blnResult
-
-            #TO-DO:
-            #Sanitize JSON Strings
             
             blnResult = True
         
@@ -631,15 +696,18 @@ class RAD_GUI_FACTORY():
 
     @classmethod
     def register(cls,arrInputClassList = []):
+
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_FACTORY":1}
+
         blnResult = False
         strCurrentType = ""
         clsBuiltObject = None
 
-        print("JSON Dict-")
-        print(str(cls.dictJSONContent))
-        print("")
-        print("Input Classes-")
-        print(str(arrInputClassList))
+        RADGUI_CONSOLE.Write("JSON Dict-")
+        RADGUI_CONSOLE.Write(str(cls.dictJSONContent))
+        RADGUI_CONSOLE.Write("")
+        RADGUI_CONSOLE.Write("Input Classes-")
+        RADGUI_CONSOLE.Write(str(arrInputClassList))
 
         #We need some input, otherwise we leave
         if(cls.dictJSONContent == []) and (arrInputClassList == []):
@@ -651,8 +719,8 @@ class RAD_GUI_FACTORY():
         if (cls.dictJSONContent != []):
             for strIndex in cls.dictJSONContent:
                 
-                print("Reviewing JSON Index")
-                print(strIndex)
+                RADGUI_CONSOLE.Write("Reviewing JSON Index")
+                RADGUI_CONSOLE.Write(strIndex)
 
                 #Move onto the next item if it doesnt even have a type
                 if "TYPE" not in cls.dictJSONContent[strIndex]:
@@ -663,24 +731,24 @@ class RAD_GUI_FACTORY():
                 #We do simple type checking to generate classes
                 strCurrentType = str(cls.dictJSONContent[strIndex]["TYPE"]).upper()
                 if (strCurrentType == "PANEL"):
-                    print("Loading into Panel Builder")
+                    RADGUI_CONSOLE.Write("Loading into Panel Builder")
                     clsBuiltObject = cls.BuildPanel(cls.dictJSONContent[strIndex])
 
                 elif (strCurrentType == "PROPERTIES"):
-                    print("Loading into Properties Builder")
+                    RADGUI_CONSOLE.Write("Loading into Properties Builder")
                     clsBuiltObject = cls.BuildProperties(cls.dictJSONContent[strIndex])
 
                 elif (strCurrentType == "OPERATOR"):
-                    print("Loading into Operator Builder")
+                    RADGUI_CONSOLE.Write("Loading into Operator Builder")
                     clsBuiltObject = cls.BuildOperator(cls.dictJSONContent[strIndex])
 
                 if (clsBuiltObject != None):
                     cls.arrDynamicClasses.append(clsBuiltObject)
                 else:
-                    print("Failed to build object")
+                    RADGUI_CONSOLE.Write("Failed to build object")
             
-            print("Dynamic Classes-")
-            print(str(cls.arrDynamicClasses))
+            RADGUI_CONSOLE.Write("Dynamic Classes-")
+            RADGUI_CONSOLE.Write(str(cls.arrDynamicClasses))
 
         #Register the classes that were manually coded
         if (cls.arrManualClasses != []):
