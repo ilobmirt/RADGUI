@@ -19,17 +19,11 @@ from .RADGUI import RADGUI_FACTORY, RADGUI_CONSOLE
 strCurrentFolder = os.path.dirname(__file__)
 RADGUI_FACTORY.LoadJSON(os.path.join(strCurrentFolder,"TestPanel.JSON"))
 
-#Limit the Output of the console by setting a TAG Filter
-RADGUI_CONSOLE.OutputFilter = {
-    "RADGUI_FACTORY":0,
-    "RADGUI_ENGINE":0
-}
-
 def register():
-    RADGUI_FACTORY.register()
+    RADGUI_FACTORY.Register()
 
 def unregister():
-    RADGUI_FACTORY.unregister()
+    RADGUI_FACTORY.Unregister()
 
 if __name__ == "__main__":
     register()
