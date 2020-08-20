@@ -1,4 +1,11 @@
 {
+   "UISettings1":{
+        "TYPE":"CONFIG",
+        "CONSOLE_FILTER":{
+            "RADGUI_FACTORY":1,
+            "RADGUI_ENGINE":1
+        }
+   },
     "UIVariables1":{
         "TYPE":"PROPERTIES",
         "DOMAIN":"abcdPropertyDomain",
