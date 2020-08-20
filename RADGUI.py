@@ -53,7 +53,7 @@ class PropertyGroupShell(PropertyGroup):
 class OperatorShell(Operator):
     
     def CompiledExecute(self,context):
-        RADGUI_CONSOLE.WriteTags = {"OPERATOR",1}
+        RADGUI_CONSOLE.WriteTags = {"OPERATOR":1}
         RADGUI_CONSOLE.Write("Button "+str(self.__class__)+" Pressed!")
 
     def execute(self,context):
@@ -93,16 +93,16 @@ class RADGUI_CONSOLE():
         Index: str = ""
 
         #Determine if message is to be written in screen
-        #No filter = All Permitted
-        if(len(cls.OutputFilter) > 0):
-            for Index in cls.WriteTags:
-                if (Index in cls.OutputFilter):
-                    if (cls.WriteTags[Index] <= cls.OutputFilter[Index]):
+        #No filter or Tags = All Permitted
+        if(cls.OutputFilter != {}) and (cls.WriteTags != {}):
+            for WriteKey, WriteValue in cls.WriteTags.items():
+                if (WriteKey in cls.OutputFilter):
+                    if (WriteValue <= cls.OutputFilter[WriteKey]):
                         CanWrite = True
                         break
         else:
             CanWrite = True
-
+        
         if(CanWrite == True):
             print(input)
 
@@ -695,7 +695,7 @@ class RADGUI_FACTORY():
         return blnResult
 
     @classmethod
-    def register(cls,arrInputClassList = []):
+    def Register(cls,arrInputClassList = []) -> bool:
 
         RADGUI_CONSOLE.WriteTags = {"RADGUI_FACTORY":1}
 
@@ -715,7 +715,6 @@ class RADGUI_FACTORY():
 
         cls.arrManualClasses = arrInputClassList
 
-        #Generate classes defined in the JSON
         if (cls.dictJSONContent != []):
             for strIndex in cls.dictJSONContent:
                 
@@ -727,25 +726,31 @@ class RADGUI_FACTORY():
                     continue
 
                 clsBuiltObject = None
-
-                #We do simple type checking to generate classes
                 strCurrentType = str(cls.dictJSONContent[strIndex]["TYPE"]).upper()
-                if (strCurrentType == "PANEL"):
-                    RADGUI_CONSOLE.Write("Loading into Panel Builder")
+
+                if (strCurrentType == "CONFIG") or (strCurrentType == "CONFIGURATION") or (strCurrentType == "SETTINGS"):
+                    RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Setting Configuration")
+                    #Console config
+                    if("CONSOLE_FILTER" in cls.dictJSONContent[strIndex]):
+                        RADGUI_CONSOLE.OutputFilter = cls.dictJSONContent[strIndex]["CONSOLE_FILTER"]
+
+                elif (strCurrentType == "PANEL"):
+                    RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Loading into Panel Builder")
                     clsBuiltObject = cls.BuildPanel(cls.dictJSONContent[strIndex])
 
                 elif (strCurrentType == "PROPERTIES"):
-                    RADGUI_CONSOLE.Write("Loading into Properties Builder")
+                    RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Loading into Properties Builder")
                     clsBuiltObject = cls.BuildProperties(cls.dictJSONContent[strIndex])
 
                 elif (strCurrentType == "OPERATOR"):
-                    RADGUI_CONSOLE.Write("Loading into Operator Builder")
+                    RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Loading into Operator Builder")
                     clsBuiltObject = cls.BuildOperator(cls.dictJSONContent[strIndex])
+
+                else:
+                    RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Failed to understand type - \"" + strCurrentType + "\"")
 
                 if (clsBuiltObject != None):
                     cls.arrDynamicClasses.append(clsBuiltObject)
-                else:
-                    RADGUI_CONSOLE.Write("Failed to build object")
             
             RADGUI_CONSOLE.Write("Dynamic Classes-")
             RADGUI_CONSOLE.Write(str(cls.arrDynamicClasses))
@@ -765,7 +770,7 @@ class RADGUI_FACTORY():
         return blnResult
 
     @classmethod
-    def unregister(cls):
+    def Unregister(cls):
         
         #UnRegister classes that were dynamically created
         if (cls.arrDynamicClasses != []):
