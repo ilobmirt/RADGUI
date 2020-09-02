@@ -16,8 +16,8 @@ import os
 from .RADGUI import RADGUI_FACTORY, RADGUI_CONSOLE
 
 #Do some global activities here like loading the JSON Panel File
-strCurrentFolder = os.path.dirname(__file__)
-RADGUI_FACTORY.LoadJSON(os.path.join(strCurrentFolder,"TestPanel.JSON"))
+CurrentFolder: str = os.path.dirname(__file__)
+RADGUI_FACTORY.LoadJSON(os.path.join(CurrentFolder,"TestPanel.JSON"))
 
 def register():
     RADGUI_FACTORY.Register()
