@@ -29,6 +29,19 @@ class RADGUI_PROPERTYGROUP_SHELL(PropertyGroup):
     Domain: str = ""
     Scope: str = "SCENE"
 
+    @staticmethod
+    def PropertyUpdate(Object, Context, PropertyName) -> None:
+
+        GeneratedEvent : Dict[str, Any] = {
+                "EVENT_ID":PropertyName,
+                "EVENT_CLASS":Object,
+                "OBJECT_TYPE":"VARIABLE",
+                "EVENT_TYPE":"VARIABLE_CHANGED",
+                "VALUE":getattr(Object,PropertyName)
+            }
+            
+        RADGUI_EVENT_MANAGER.HandleEvent(GeneratedEvent)
+
     @classmethod
     def register(cls) -> None:
         if (cls.Domain != ""):
@@ -52,9 +65,21 @@ class RADGUI_PROPERTYGROUP_SHELL(PropertyGroup):
 #==================================================#
 class RADGUI_OPERATOR_SHELL(Operator):
     
+    EventID: bpy.props.StringProperty()
+
     def CompiledExecute(self,Context) -> None:
         RADGUI_CONSOLE.WriteTags = {"OPERATOR":1}
         RADGUI_CONSOLE.Write("Button "+str(self.__class__)+" Pressed!")
+
+        if (self.EventID != ""):
+
+            GeneratedEvent : Dict[str, Any] = {
+                "EVENT_ID":self.EventID,
+                "OBJECT_TYPE":"BUTTON",
+                "EVENT_TYPE":"BUTTON_PRESSED"
+            }
+            
+            RADGUI_EVENT_MANAGER.HandleEvent(GeneratedEvent)
 
     def execute(self,Context) -> Any:
         self.CompiledExecute(Context)
@@ -228,7 +253,8 @@ class RADGUI_ENGINE():
             "ICON":"NONE",
             "EMBOSS":True,
             "DEPRESS":False,
-            "ICON_VALUE":0
+            "ICON_VALUE":0,
+            "NAME":""
         }
 
         #Required Attribute - Class Name
@@ -258,8 +284,11 @@ class RADGUI_ENGINE():
             Attributes["DEPRESS"] = bool(Command["DEPRESS"])
         if "ICON_VALUE" in Command:
             Attributes["ICON_VALUE"] = int(Command["ICON_VALUE"])
+        if "NAME" in Command:
+            if str(Command["NAME"]).strip() != "":
+                Attributes["NAME"] = str(Command["NAME"]).strip()
 
-        CurrentAction: Any = Context.operator(
+        CurrentAction = Context.operator(
             Attributes["CLASS"],
             text = Attributes["TEXT"],
             text_ctxt = Attributes["TEXT_CTXT"],
@@ -269,6 +298,9 @@ class RADGUI_ENGINE():
             depress = Attributes["DEPRESS"],
             icon_value = Attributes["ICON_VALUE"]
             )
+
+        if (Attributes["NAME"] != ""):
+            CurrentAction.EventID = Attributes["NAME"]
 
     @classmethod
     def WriteProperty(cls,ContextObject,ContextEnvironment,Command: Dict[str, Any] = {}) -> None:
@@ -562,7 +594,8 @@ class RADGUI_FACTORY():
                     name= Params["TEXT"],
                     description=Params["DESCRIPTION"],
                     default=Params["DEFAULT"],
-                    maxlen=Params["LENGTH_MAX"]
+                    maxlen=Params["LENGTH_MAX"],
+                    update=eval("lambda Part1,Part2: RADGUI_PROPERTYGROUP_SHELL.PropertyUpdate(Part1,Part2,'"+CurrentName+"')")
                 )
 
             elif (CurrentType == "INTEGER"):
@@ -575,7 +608,8 @@ class RADGUI_FACTORY():
                     max=Params["HARD_MAX"],
                     soft_min=Params["SOFT_MIN"],
                     soft_max=Params["SOFT_MAX"],
-                    step= Params["STEP"]
+                    step= Params["STEP"],
+                    update=eval("lambda Part1,Part2: RADGUI_PROPERTYGROUP_SHELL.PropertyUpdate(Part1,Part2,'"+CurrentName+"')")
                 )
                 
             elif (CurrentType == "FLOAT"):
@@ -589,7 +623,8 @@ class RADGUI_FACTORY():
                     soft_min=Params["SOFT_MIN"],
                     soft_max=Params["SOFT_MAX"],
                     step=Params["STEP"],
-                    precision=Params["PRECISION"]
+                    precision=Params["PRECISION"],
+                    update=eval("lambda Part1,Part2: RADGUI_PROPERTYGROUP_SHELL.PropertyUpdate(Part1,Part2,'"+CurrentName+"')")
                 )
                 
             elif (CurrentType == "BOOL") or (CurrentType == "BOOLEAN"):
@@ -597,7 +632,8 @@ class RADGUI_FACTORY():
                 Attributes["__annotations__"][CurrentName] = BoolProperty(
                     name=Params["TEXT"],
                     description=Params["DESCRIPTION"],
-                    default= Params["DEFAULT"]
+                    default= Params["DEFAULT"],
+                    update=eval("lambda Part1,Part2: RADGUI_PROPERTYGROUP_SHELL.PropertyUpdate(Part1,Part2,'"+CurrentName+"')")
                 )
 
             RADGUI_CONSOLE.Write("Registering Properties Group with the following attributes:")
@@ -634,6 +670,10 @@ class RADGUI_FACTORY():
         Attributes["bl_idname"] = str(Input["DOMAIN"]).lower() + "." + str(Input["CLASS"]).lower()
         #Describe Button Label to Blender
         Attributes["bl_label"] = Input["TEXT"]
+
+        #Set Annotation for Event System
+        Attributes["__annotations__"] = {}
+        Attributes["__annotations__"]["EventID"] = StringProperty(name= "Event_ID")
 
         Result = type(ClassName,(RADGUI_OPERATOR_SHELL,),Attributes)
         return Result
@@ -801,3 +841,13 @@ class RADGUI_FACTORY():
             RADGUI_CONSOLE.Write("(RADGUI_FACTORY.UNREGISTER) Failed to unregister classes")
 
         return Result
+
+#==================================================#
+#RAD GUI Event Manager
+#==================================================#
+class RADGUI_EVENT_MANAGER():
+    @classmethod
+    def HandleEvent(cls,InputEvent: Dict[str, Any]) -> None:
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":1}
+        RADGUI_CONSOLE.Write("(RADGUI_EVENT_MANAGER) Event Raised")
+        RADGUI_CONSOLE.Write(str(InputEvent))
