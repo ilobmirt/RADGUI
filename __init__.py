@@ -13,7 +13,7 @@ bl_info = {
 #Import Libraries
 import bpy
 import os
-from .RADGUI import RADGUI_FACTORY, RADGUI_CONSOLE
+from .RADGUI import RADGUI_FACTORY
 
 #Do some global activities here like loading the JSON Panel File
 CurrentFolder: str = os.path.dirname(__file__)
