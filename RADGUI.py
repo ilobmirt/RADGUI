@@ -1,4 +1,5 @@
 import bpy, json
+import sys
 from bpy.props import StringProperty, IntProperty, FloatProperty, BoolProperty, PointerProperty
 from bpy.types import Operator, PropertyGroup, Panel
 from typing import List, Dict, Any
@@ -254,7 +255,7 @@ class RADGUI_ENGINE():
             "EMBOSS":True,
             "DEPRESS":False,
             "ICON_VALUE":0,
-            "NAME":""
+            "EVENT_ID":""
         }
 
         #Required Attribute - Class Name
@@ -284,9 +285,9 @@ class RADGUI_ENGINE():
             Attributes["DEPRESS"] = bool(Command["DEPRESS"])
         if "ICON_VALUE" in Command:
             Attributes["ICON_VALUE"] = int(Command["ICON_VALUE"])
-        if "NAME" in Command:
-            if str(Command["NAME"]).strip() != "":
-                Attributes["NAME"] = str(Command["NAME"]).strip()
+        if "EVENT_ID" in Command:
+            if str(Command["EVENT_ID"]).strip() != "":
+                Attributes["EVENT_ID"] = str(Command["EVENT_ID"]).strip()
 
         CurrentAction = Context.operator(
             Attributes["CLASS"],
@@ -299,8 +300,8 @@ class RADGUI_ENGINE():
             icon_value = Attributes["ICON_VALUE"]
             )
 
-        if (Attributes["NAME"] != ""):
-            CurrentAction.EventID = Attributes["NAME"]
+        if (Attributes["EVENT_ID"] != ""):
+            CurrentAction.EventID = Attributes["EVENT_ID"]
 
     @classmethod
     def WriteProperty(cls,ContextObject,ContextEnvironment,Command: Dict[str, Any] = {}) -> None:
@@ -779,7 +780,12 @@ class RADGUI_FACTORY():
                     RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Setting Configuration")
                     #Console config
                     if("CONSOLE_FILTER" in cls.JSONContent[ContentIndex]):
+                        RADGUI_CONSOLE.Write("- Console Filter")
                         RADGUI_CONSOLE.OutputFilter = cls.JSONContent[ContentIndex]["CONSOLE_FILTER"]
+                    #Event Registration
+                    if("EVENTS" in cls.JSONContent[ContentIndex]):
+                        RADGUI_CONSOLE.Write("- Event Registration")
+                        RADGUI_EVENT_MANAGER.RegisteredEvents = cls.JSONContent[ContentIndex]["EVENTS"]
 
                 elif (CurrentType == "PANEL"):
                     RADGUI_CONSOLE.Write("(RADGUI_FACTORY.REGISTER) Loading into Panel Builder")
@@ -846,8 +852,66 @@ class RADGUI_FACTORY():
 #RAD GUI Event Manager
 #==================================================#
 class RADGUI_EVENT_MANAGER():
+    RegisteredEvents: Dict[str, List[Dict[str, Any]]] = {}
+
     @classmethod
     def HandleEvent(cls,InputEvent: Dict[str, Any]) -> None:
         RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         RADGUI_CONSOLE.Write("(RADGUI_EVENT_MANAGER) Event Raised")
         RADGUI_CONSOLE.Write(str(InputEvent))
+
+        #Move through each Key which holds a reference to the class and function
+        ModulePrefix:str = "RADGUI."
+        TargetIndex: str = ""
+        TargetClass: Any = None
+        TargetModuleName:str = ""
+        TargetClassName: str = ""
+        TargetFunctionName: str = ""
+        EventList: List[Dict[str, Any]] = []
+        EventIndex: Dict[str, Any] = {}
+        IsSubset: bool = False
+        ClassExists: bool = False
+        FunctionExists: bool = False
+        ModuleIndex: str = ""
+
+        for TargetIndex, EventList in cls.RegisteredEvents.items():
+
+            #No Blanks And the Index must address a class and a function
+            if(TargetIndex == "") or (len(TargetIndex.split(".")) != 3) or (len(EventList) == 0):
+                continue
+
+            IsSubset = False
+
+            #Verify if EventList fits entirely within InputEvent
+            for EventIndex in EventList:
+                IsSubset = set(EventIndex.items()).issubset(set(InputEvent.items()))
+                if IsSubset == True:
+                    break
+
+            #If there is a match, we do call the object's method
+            if IsSubset == True:
+
+                ClassExists = True
+                FunctionExists = True
+                TargetModuleName, TargetClassName, TargetFunctionName = TargetIndex.split(".")
+
+                #Verify Existence
+                RADGUI_CONSOLE.Write("Verifying Existence of \"{}\"".format(TargetIndex))
+                try:
+                    TargetClass = getattr(sys.modules["{}{}".format(ModulePrefix,TargetModuleName)], TargetClassName)
+                except expression as identifier:
+                    ClassExists = False
+
+                if(ClassExists == True):
+                    RADGUI_CONSOLE.Write("\"{}\" Exists in Module \"{}\"".format(TargetClassName,TargetModuleName))
+                    try:
+                        FunctionExists = hasattr(TargetClass,TargetFunctionName)
+                    except expression as identifier:
+                        pass
+
+                    if(FunctionExists == True):
+                        RADGUI_CONSOLE.Write("\"{}\" Exists in Class \"{}\"".format(TargetFunctionName,TargetClassName))
+                        getattr(TargetClass,TargetFunctionName)(InputEvent)
+
+                else:
+                    RADGUI_CONSOLE.Write("\"{}\" not found in Module \"{}\"".format(TargetClassName,TargetModuleName))
