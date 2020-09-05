@@ -14,6 +14,7 @@ bl_info = {
 import bpy
 import os
 from .RADGUI import RADGUI_FACTORY
+from .CUSTOMCLASSES import EXAMPLE_CLASS1, EXAMPLE_CLASS2
 
 #Do some global activities here like loading the JSON Panel File
 CurrentFolder: str = os.path.dirname(__file__)
