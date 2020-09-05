@@ -3,9 +3,46 @@
         "TYPE":"CONFIG",
         "CONSOLE_FILTER":{
             "RADGUI_FACTORY":1,
-            "RADGUI_ENGINE":1,
-            "RADGUI_EVENT_MANAGER":1,
-            "OPERATOR":1
+            "RADGUI_ENGINE":1
+        },
+        "EVENTS":{
+            "CUSTOMCLASSES.EXAMPLE_CLASS1.FunctionA":[
+                {
+                    "EVENT_ID":"btnOPEN"
+                },
+                {
+                    "EVENT_ID":"btnSAVE"
+                }
+            ],
+            "CUSTOMCLASSES.EXAMPLE_CLASS1.FunctionB":[
+                {
+                    "EVENT_ID":"blnVar1",
+                    "VALUE":true
+                },
+                {
+                    "EVENT_ID":"strVar1"
+                },
+                {
+                    "EVENT_ID":"fltVar1"
+                }
+            ],
+            "CUSTOMCLASSES.EXAMPLE_CLASS2.FunctionA":[
+                {
+                    "EVENT_ID":"btnVIEW"
+                }
+            ],
+            "CUSTOMCLASSES.EXAMPLE_CLASS2.FunctionB":[
+                {
+                    "EVENT_ID":"blnVar1",
+                    "VALUE":false
+                },
+                {
+                    "EVENT_ID":"strVar1"
+                },
+                {
+                    "EVENT_ID":"intVar1"
+                }
+            ]
         }
    },
     "UIVariables1":{
@@ -79,14 +116,14 @@
                 "CLASS":"abcdButtonDomain.SimpleButton",
                 "TEXT":"Button 1",
                 "ICON":"FILEBROWSER",
-                "NAME":"btnOPEN"
+                "EVENT_ID":"btnOPEN"
             },
             {
                 "TYPE":"OPERATOR",
                 "CLASS":"abcdButtonDomain.SimpleButton",
                 "TEXT":"Button 2",
                 "ICON":"FILE_TICK",
-                "NAME":"btnSAVE"
+                "EVENT_ID":"btnSAVE"
             },
             {
                 "TYPE":"ROW",
@@ -99,7 +136,7 @@
                 "CLASS":"abcdButtonDomain.SimpleButton",
                 "TEXT":"Button 3",
                 "ICON":"VIEW_CAMERA",
-                "NAME":"btnVIEW"
+                "EVENT_ID":"btnVIEW"
             },
             {
                 "TYPE":"ROW",
