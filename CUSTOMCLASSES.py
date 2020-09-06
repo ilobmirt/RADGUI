@@ -13,13 +13,19 @@ from typing import List, Dict, Any
 class EXAMPLE_CLASS1():
     @classmethod
     def FunctionA(cls,InputEvent: Dict[str, Any]) -> None:
+        print(" ")
         print("(EXAMPLE_CLASS1.FunctionA):")
         print("Event {} Called from {}".format(InputEvent["EVENT_TYPE"],InputEvent["EVENT_ID"]))
+        if("VALUE" in InputEvent):
+            print("Value = {}".format(InputEvent["VALUE"]))
 
     @classmethod
     def FunctionB(cls,InputEvent: Dict[str, Any]) -> None:
+        print(" ")
         print("(EXAMPLE_CLASS1.FunctionB):")
         print("Event {} Called from {}".format(InputEvent["EVENT_TYPE"],InputEvent["EVENT_ID"]))
+        if("VALUE" in InputEvent):
+            print("Value = {}".format(InputEvent["VALUE"]))
 
 #==================================================#
 #EXAMPLE CLASS #2
@@ -27,10 +33,16 @@ class EXAMPLE_CLASS1():
 class EXAMPLE_CLASS2():
     @classmethod
     def FunctionA(cls,InputEvent: Dict[str, Any]) -> None:
+        print(" ")
         print("(EXAMPLE_CLASS2.FunctionA):")
         print("Event {} Called from {}".format(InputEvent["EVENT_TYPE"],InputEvent["EVENT_ID"]))
+        if("VALUE" in InputEvent):
+            print("Value = {}".format(InputEvent["VALUE"]))
 
     @classmethod
     def FunctionB(cls,InputEvent: Dict[str, Any]) -> None:
+        print(" ")
         print("(EXAMPLE_CLASS2.FunctionB):")
         print("Event {} Called from {}".format(InputEvent["EVENT_TYPE"],InputEvent["EVENT_ID"]))
+        if("VALUE" in InputEvent):
+            print("Value = {}".format(InputEvent["VALUE"]))
