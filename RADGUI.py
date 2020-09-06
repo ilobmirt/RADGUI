@@ -36,6 +36,7 @@ class RADGUI_PROPERTYGROUP_SHELL(PropertyGroup):
         GeneratedEvent : Dict[str, Any] = {
                 "EVENT_ID":PropertyName,
                 "EVENT_CLASS":Object,
+                "CONTEXT":Context,
                 "OBJECT_TYPE":"VARIABLE",
                 "EVENT_TYPE":"VARIABLE_CHANGED",
                 "VALUE":getattr(Object,PropertyName)
@@ -77,6 +78,7 @@ class RADGUI_OPERATOR_SHELL(Operator):
             GeneratedEvent : Dict[str, Any] = {
                 "EVENT_ID":self.EventID,
                 "OBJECT_TYPE":"BUTTON",
+                "CONTEXT":Context,
                 "EVENT_TYPE":"BUTTON_PRESSED"
             }
             
@@ -861,23 +863,28 @@ class RADGUI_EVENT_MANAGER():
         RADGUI_CONSOLE.Write(str(InputEvent))
 
         #Move through each Key which holds a reference to the class and function
-        ModulePrefix:str = "RADGUI."
         TargetIndex: str = ""
         TargetClass: Any = None
-        TargetModuleName:str = ""
-        TargetClassName: str = ""
-        TargetFunctionName: str = ""
         EventList: List[Dict[str, Any]] = []
         EventIndex: Dict[str, Any] = {}
         IsSubset: bool = False
-        ClassExists: bool = False
-        FunctionExists: bool = False
+        TargetModuleName:str = ""
+        TargetClassName: str = ""
+        TargetMethodName: str = ""
+        LoadedModules: List[str] = []
+        ModuleContents: List[str] = []
+        ClassContents: List[str] = []
+        ConsideredModules: List[str] = []
+        ConsideredClass: Any = None
+        ConsideredMethod: Any = None
+        ConsideredMethods: List[Any] = []
         ModuleIndex: str = ""
+        MethodIndex: Any = None
 
         for TargetIndex, EventList in cls.RegisteredEvents.items():
 
-            #No Blanks And the Index must address a class and a function
-            if(TargetIndex == "") or (len(TargetIndex.split(".")) != 3) or (len(EventList) == 0):
+            #No Blanks And the Index must address a class and a method
+            if(TargetIndex == "") or (len(TargetIndex.split(".")) < 3) or (len(EventList) == 0):
                 continue
 
             IsSubset = False
@@ -890,28 +897,66 @@ class RADGUI_EVENT_MANAGER():
 
             #If there is a match, we do call the object's method
             if IsSubset == True:
-
-                ClassExists = True
-                FunctionExists = True
-                TargetModuleName, TargetClassName, TargetFunctionName = TargetIndex.split(".")
-
-                #Verify Existence
                 RADGUI_CONSOLE.Write("Verifying Existence of \"{}\"".format(TargetIndex))
-                try:
-                    TargetClass = getattr(sys.modules["{}{}".format(ModulePrefix,TargetModuleName)], TargetClassName)
-                except expression as identifier:
-                    ClassExists = False
 
-                if(ClassExists == True):
-                    RADGUI_CONSOLE.Write("\"{}\" Exists in Module \"{}\"".format(TargetClassName,TargetModuleName))
+                #We do our best to get the right module, class, & method
+                TargetModuleName = ".".join(TargetIndex.split(".")[:-2])
+                TargetClassName = TargetIndex.split(".")[-2]
+                TargetMethodName = TargetIndex.split(".")[-1]
+
+                #Does the defined module even exist in loaded modules?
+                LoadedModules = sys.modules.keys()
+                ConsideredModules = list(filter(lambda x: TargetModuleName in x, LoadedModules))
+
+                RADGUI_CONSOLE.Write("Found {} Possible Module(s) - {}".format(len(ConsideredModules),ConsideredModules))
+
+                #End of the line if none were found
+                if (len(ConsideredModules) == 0):
+                    continue
+
+                #Find all the classes that match the class name in all modules
+                for ModuleIndex in ConsideredModules:
+                    #List all the classes in the Module
+                    ModuleContents = dir(sys.modules[ModuleIndex])
+
+                    #Move onto the next Index if the class cant be found
+                    if (TargetClassName not in ModuleContents):
+                        continue
+
+                    #We do have the class in the module? Lets try and check it out
                     try:
-                        FunctionExists = hasattr(TargetClass,TargetFunctionName)
+                        ConsideredClass = getattr(sys.modules[ModuleIndex],TargetClassName)
+                        ClassContents = dir(ConsideredClass)
                     except expression as identifier:
-                        pass
+                        RADGUI_CONSOLE.Write("Had issue getting contents of Class \"{}\" in Module \"{}\"".format(TargetClassName,ModuleIndex))
+                        continue
 
-                    if(FunctionExists == True):
-                        RADGUI_CONSOLE.Write("\"{}\" Exists in Class \"{}\"".format(TargetFunctionName,TargetClassName))
-                        getattr(TargetClass,TargetFunctionName)(InputEvent)
+                    #Move onto the next Index if the function cant be found
+                    if (TargetMethodName not in ClassContents):
+                        continue
 
-                else:
-                    RADGUI_CONSOLE.Write("\"{}\" not found in Module \"{}\"".format(TargetClassName,TargetModuleName))
+                    #Verify type is a function
+                    try:
+                        ConsideredMethod = getattr(ConsideredClass,TargetMethodName)
+                        if ConsideredMethod.__class__.__name__ != 'method':
+                            RADGUI_CONSOLE.Write("{}.{}.{} is actually not a method but a \"{}\"".format(ModuleIndex,TargetClassName,TargetMethodName,ConsideredMethod.__class__.__name__))
+                            continue
+                        else:
+                            ConsideredMethods.append(ConsideredMethod)
+                            RADGUI_CONSOLE.Write("{}.{}.{} added to considered methods".format(ModuleIndex,TargetClassName,TargetMethodName))
+                    except expression as identifier:
+                        RADGUI_CONSOLE.Write("Had issue getting properties of method \"{}\" in Class \"{}\"".format(TargetMethodName,TargetClassName))
+                        continue
+
+                #We're left with all the functions that might be the one described
+                #Do we have anything?
+                if(len(ConsideredMethods) == 0):
+                    RADGUI_CONSOLE.Write("No Methods found")
+                    continue
+
+                #Try and send to all applicable functions
+                for MethodIndex in ConsideredMethods:
+                    try:
+                        MethodIndex(InputEvent)
+                    except expression as identifier:
+                        continue
