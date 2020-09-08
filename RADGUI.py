@@ -845,7 +845,7 @@ class RADGUI_FACTORY():
 
             Result = True
 
-        except expression as identifier:
+        except:
             RADGUI_CONSOLE.Write("(RADGUI_FACTORY.UNREGISTER) Failed to unregister classes")
 
         return Result
@@ -864,7 +864,6 @@ class RADGUI_EVENT_MANAGER():
 
         #Move through each Key which holds a reference to the class and function
         TargetIndex: str = ""
-        TargetClass: Any = None
         EventList: List[Dict[str, Any]] = []
         EventIndex: Dict[str, Any] = {}
         IsSubset: bool = False
@@ -927,7 +926,7 @@ class RADGUI_EVENT_MANAGER():
                     try:
                         ConsideredClass = getattr(sys.modules[ModuleIndex],TargetClassName)
                         ClassContents = dir(ConsideredClass)
-                    except expression as identifier:
+                    except:
                         RADGUI_CONSOLE.Write("Had issue getting contents of Class \"{}\" in Module \"{}\"".format(TargetClassName,ModuleIndex))
                         continue
 
@@ -944,7 +943,7 @@ class RADGUI_EVENT_MANAGER():
                         else:
                             ConsideredMethods.append(ConsideredMethod)
                             RADGUI_CONSOLE.Write("{}.{}.{} added to considered methods".format(ModuleIndex,TargetClassName,TargetMethodName))
-                    except expression as identifier:
+                    except:
                         RADGUI_CONSOLE.Write("Had issue getting properties of method \"{}\" in Class \"{}\"".format(TargetMethodName,TargetClassName))
                         continue
 
@@ -958,5 +957,5 @@ class RADGUI_EVENT_MANAGER():
                 for MethodIndex in ConsideredMethods:
                     try:
                         MethodIndex(InputEvent)
-                    except expression as identifier:
+                    except:
                         continue
