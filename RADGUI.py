@@ -855,6 +855,16 @@ class RADGUI_FACTORY():
 #==================================================#
 class RADGUI_EVENT_MANAGER():
     RegisteredEvents: Dict[str, List[Dict[str, Any]]] = {}
+    StrictNaming: bool = False
+    LimitMethods: bool = False
+
+    @classmethod
+    def AddEvent(cls,MethodID: str,InputEvents: List[Dict[str,Any]]) -> None:
+        pass
+
+    @classmethod
+    def RemoveEvent(cls,MethodID: str,InputEvents: List[Dict[str,Any]]) -> None:
+        pass
 
     @classmethod
     def HandleEvent(cls,InputEvent: Dict[str, Any]) -> None:
