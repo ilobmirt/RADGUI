@@ -2,47 +2,49 @@
    "UISettings1":{
         "TYPE":"CONFIG",
         "CONSOLE_FILTER":{
-            "RADGUI_FACTORY":1,
-            "RADGUI_ENGINE":1
+            "NOTHING":-1
         },
         "EVENTS":{
-            "CUSTOMCLASSES.EXAMPLE_CLASS1.FunctionA":[
-                {
-                    "EVENT_ID":"btnOPEN"
-                },
-                {
-                    "EVENT_ID":"btnSAVE"
-                }
-            ],
-            "CUSTOMCLASSES.EXAMPLE_CLASS1.FunctionB":[
-                {
-                    "EVENT_ID":"blnVar1",
-                    "VALUE":true
-                },
-                {
-                    "EVENT_ID":"strVar1"
-                },
-                {
-                    "EVENT_ID":"fltVar1"
-                }
-            ],
-            "CUSTOMCLASSES.EXAMPLE_CLASS2.FunctionA":[
-                {
-                    "EVENT_ID":"btnVIEW"
-                }
-            ],
-            "CUSTOMCLASSES.EXAMPLE_CLASS2.FunctionB":[
-                {
-                    "EVENT_ID":"blnVar1",
-                    "VALUE":false
-                },
-                {
-                    "EVENT_ID":"strVar1"
-                },
-                {
-                    "EVENT_ID":"intVar1"
-                }
-            ]
+            "STRICT":false,
+            "ASSOCIATIONS":{
+                "CUSTOMCLASSES.EXAMPLE_CLASS1.FunctionA":[
+                    {
+                        "EVENT_ID":"btnOPEN"
+                    },
+                    {
+                        "EVENT_ID":"btnSAVE"
+                    }
+                ],
+                "CUSTOMCLASSES.EXAMPLE_CLASS1.FunctionB":[
+                    {
+                        "EVENT_ID":"blnVar1",
+                        "VALUE":true
+                    },
+                    {
+                        "EVENT_ID":"strVar1"
+                    },
+                    {
+                        "EVENT_ID":"fltVar1"
+                    }
+                ],
+                "CUSTOMCLASSES.EXAMPLE_CLASS2.FunctionA":[
+                    {
+                        "EVENT_ID":"btnVIEW"
+                    }
+                ],
+                "CUSTOMCLASSES.EXAMPLE_CLASS2.FunctionB":[
+                    {
+                        "EVENT_ID":"blnVar1",
+                        "VALUE":false
+                    },
+                    {
+                        "EVENT_ID":"strVar1"
+                    },
+                    {
+                        "EVENT_ID":"intVar1"
+                    }
+                ]
+            }
         }
    },
     "UIVariables1":{
