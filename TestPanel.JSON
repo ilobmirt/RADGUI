@@ -2,7 +2,7 @@
    "UISettings1":{
         "TYPE":"CONFIG",
         "CONSOLE_FILTER":{
-            "NOTHING":-1
+            "NOCONSOLE":-1
         },
         "EVENTS":{
             "STRICT":false,
@@ -42,6 +42,87 @@
                     },
                     {
                         "EVENT_ID":"intVar1"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Remove_A_Events":[
+                    {
+                        "EVENT_ID":"btnEVENTSA"
+                    },
+                    {
+                        "EVENT_ID":"btnCLEAR",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Remove_B_Events":[
+                    {
+                        "EVENT_ID":"btnEVENTSB"
+                    },
+                    {
+                        "EVENT_ID":"btnCLEAR",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Remove_C_Events":[
+                    {
+                        "EVENT_ID":"btnEVENTSC"
+                    },
+                    {
+                        "EVENT_ID":"btnCLEAR",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Register_ALL_Events":[
+                    {
+                        "EVENT_ID":"btnRESET"
+                    }
+                ]
+            }
+        }
+   },
+   "UISettings2":{
+
+        "TYPE":"CONFIG",
+        "EVENTS":{
+            "STRICT":false,
+            "ASSOCIATIONS":{
+                "CUSTOMCLASSES.Events_Example.Remove_A_Events":[
+                    {
+                        "EVENT_ID":"btnEVENTSA",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
+                    },
+                    {
+                        "EVENT_ID":"btnCLEAR"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Remove_B_Events":[
+                    {
+                        "EVENT_ID":"btnEVENTSB",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
+                    },
+                    {
+                        "EVENT_ID":"btnCLEAR"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Remove_C_Events":[
+                    {
+                        "EVENT_ID":"btnEVENTSC",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
+                    },
+                    {
+                        "EVENT_ID":"btnCLEAR"
+                    }
+                ],
+                "CUSTOMCLASSES.Events_Example.Register_ALL_Events":[
+                    {
+                        "EVENT_ID":"btnRESET",
+                        "OBJECT_TYPE":"BUTTON",
+                        "EVENT_TYPE":"BUTTON_PRESSED"
                     }
                 ]
             }
@@ -146,9 +227,91 @@
                 "ALIGN":false
             },
             {
+                "TYPE":"LABEL",
+                "CONTEXT":"LAYOUT",
+                "TEXT":"Events Registration Example"
+            },
+            {
+                "TYPE":"COLUMN",
+                "CONTEXT":"LAYOUT",
+                "SAVE":true,
+                "ALIGN":true
+            },
+            {
+                "TYPE":"ROW",
+                "CONTEXT":"COLUMN",
+                "SAVE":true,
+                "ALIGN":true
+            },
+            {
+                "TYPE":"OPERATOR",
+                "CONTEXT":"ROW",
+                "CLASS":"abcdButtonDomain.SimpleButton",
+                "TEXT":"Button A",
+                "EVENT_ID":"btnEVENTSA"
+            },
+            {
+                "TYPE":"OPERATOR",
+                "CONTEXT":"ROW",
+                "CLASS":"abcdButtonDomain.SimpleButton",
+                "TEXT":"Button B",
+                "EVENT_ID":"btnEVENTSB"
+            },
+            {
+                "TYPE":"OPERATOR",
+                "CONTEXT":"ROW",
+                "CLASS":"abcdButtonDomain.SimpleButton",
+                "TEXT":"Button C",
+                "EVENT_ID":"btnEVENTSC"
+            },
+            {
+                "TYPE":"ROW",
+                "CONTEXT":"COLUMN",
+                "SAVE":true,
+                "ALIGN":true
+            },
+            {
+            
+                "TYPE":"OPERATOR",
+                "CONTEXT":"ROW",
+                "CLASS":"abcdButtonDomain.SimpleButton",
+                "TEXT":"CLEAR",
+                "EVENT_ID":"btnCLEAR"
+            },
+            {
+            
+                "TYPE":"OPERATOR",
+                "CONTEXT":"ROW",
+                "CLASS":"abcdButtonDomain.SimpleButton",
+                "TEXT":"RESET",
+                "EVENT_ID":"btnRESET"
+            },
+            {
                 "TYPE":"ROW",
                 "SAVE":true,
                 "ALIGN":false
+            },
+            {
+                "TYPE":"LABEL",
+                "CONTEXT":"LAYOUT",
+                "TEXT":"Properties Example"
+            },
+            {
+                "TYPE":"COLUMN",
+                "CONTEXT":"LAYOUT",
+                "SAVE":true,
+                "ALIGN":true
+            },
+            {
+                "TYPE":"ROW",
+                "CONTEXT":"COLUMN",
+                "SAVE":true,
+                "ALIGN":true
+            },
+            {
+                "TYPE":"LABEL",
+                "CONTEXT":"ROW",
+                "TEXT":"strVar1:"
             },
             {
                 "TYPE":"PROPERTY",
@@ -162,6 +325,11 @@
                 "ALIGN":false
             },
             {
+                "TYPE":"LABEL",
+                "CONTEXT":"ROW",
+                "TEXT":"intVar1:"
+            },
+            {
                 "TYPE":"PROPERTY",
                 "CONTEXT":"ROW",
                 "VARIABLE":"scene.abcdPropertyDomain.intVar1"
@@ -171,6 +339,11 @@
                 "CONTEXT":"COLUMN",
                 "SAVE":true,
                 "ALIGN":false
+            },
+            {
+                "TYPE":"LABEL",
+                "CONTEXT":"ROW",
+                "TEXT":"fltVar1:"
             },
             {
                 "TYPE":"PROPERTY",
@@ -184,13 +357,18 @@
                 "ALIGN":false
             },
             {
+                "TYPE":"LABEL",
+                "CONTEXT":"ROW",
+                "TEXT":"blnVar1:"
+            },
+            {
                 "TYPE":"PROPERTY",
                 "CONTEXT":"ROW",
                 "VARIABLE":"scene.abcdPropertyDomain.blnVar1"
             },
             {
-                "TYPE":"ROW",
-                "CONTEXT":"COLUMN",
+                "TYPE":"COLUMN",
+                "CONTEXT":"LAYOUT",
                 "SAVE":true,
                 "ALIGN":false
             },
