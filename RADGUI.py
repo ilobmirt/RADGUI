@@ -875,6 +875,7 @@ class RADGUI_EVENT_MANAGER():
         
         RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         RADGUI_CONSOLE.Write("(RADGUI_EVENT_MANAGER) Adding event for module {}".format(MethodID))
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":2}
 
         #Method name and at least one event should be provided
         if ((MethodID.strip() == "") or (len(InputEvents) == 0)):
@@ -993,6 +994,10 @@ class RADGUI_EVENT_MANAGER():
         InputEventIndex: Dict[str,Any] = {}
         CalculatedEventIndex: Dict[str,Any] = {}
 
+        #If it has no events yet, just optimize the list provided
+        if (len(SandboxIndex[MethodID]["EVENTS"]) == 0):
+            SandboxIndex[MethodID]["EVENTS"] = InputEvents
+
         #Loop through each item to add in InputEvents
         for InputEventIndex in InputEvents:
 
@@ -1000,31 +1005,35 @@ class RADGUI_EVENT_MANAGER():
             IsSubset = False
             IsSuperset = False
             IsMatch = False
-            
-            #nothing will add if nothing exists
-            if (len(SandboxIndex[MethodID]["EVENTS"]) == 0):
-                ToAdd = True
-            else:
-                ToAdd = False
+            ToAdd = False               
 
-            for CalculatedEventIndex in SandboxIndex[MethodID]["EVENTS"]:
+            for CalculatedEventIndex in list(SandboxIndex[MethodID]["EVENTS"]):
                 
                 RADGUI_CONSOLE.Write("-->-- For [{}] in [{}]".format(str(CalculatedEventIndex),str(SandboxIndex[MethodID]["EVENTS"])))
                 IsSubset = set(InputEventIndex.items()).issubset(set(CalculatedEventIndex.items()))
                 IsSuperset = set(InputEventIndex.items()).issuperset(set(CalculatedEventIndex.items()))
                 IsMatch = (InputEventIndex == CalculatedEventIndex)
 
+                #Dont Wanna duplicate data
                 if (IsMatch == True):
                     RADGUI_CONSOLE.Write("-->-- Matches")
+                    ToAdd = False
                     break
 
+                #Dont want to add more narrow Event Criteria when looser criteria already exists
+                if (IsSuperset==True):
+                    RADGUI_CONSOLE.Write("-->-- Is Superset")
+                    ToAdd = False
+                    break
+
+                #Remove more narrow Event Criteria
                 if (IsSubset == True):
                     RADGUI_CONSOLE.Write("-->-- Is Subset")
-                    ToAdd = True
+                    RADGUI_CONSOLE.Write("-- Removing [{}]".format(CalculatedEventIndex))
                     SandboxIndex[MethodID]["EVENTS"].remove(CalculatedEventIndex)
 
-                if (IsSuperset==False):
-                    ToAdd = True
+                #If you got here, it might be up for consideration
+                ToAdd = True
             
             if (ToAdd == True):
                 RADGUI_CONSOLE.Write("-- Adding [{}]".format(InputEventIndex))
@@ -1038,6 +1047,7 @@ class RADGUI_EVENT_MANAGER():
     def RemoveEvent(cls,MethodID: str,InputEvents: List[Dict[str,Any]] = []) -> None:
         RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         RADGUI_CONSOLE.Write("(RADGUI_EVENT_MANAGER) Removing event associations associated with method \"{}\"".format(MethodID))
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":2}
 
         #Continue if Method is named
         if (MethodID.strip() == ""):
@@ -1059,7 +1069,7 @@ class RADGUI_EVENT_MANAGER():
         CalculatedEventIndex: Dict[str,Any] = {}
 
         for InputEventIndex in InputEvents:
-            for CalculatedEventIndex in cls.RegisteredEvents[MethodID]["EVENTS"]:
+            for CalculatedEventIndex in list(cls.RegisteredEvents[MethodID]["EVENTS"]):
                 if (InputEventIndex == CalculatedEventIndex):
                     cls.RegisteredEvents[MethodID]["EVENTS"].remove(CalculatedEventIndex)
                     break
@@ -1068,6 +1078,7 @@ class RADGUI_EVENT_MANAGER():
     def HandleEvent(cls,InputEvent: Dict[str, Any]) -> None:
         RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         RADGUI_CONSOLE.Write("(RADGUI_EVENT_MANAGER) Event Raised \n {}".format(str(InputEvent)))
+        RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":2}
 
         #Move through each Key which holds a reference to the class and function
         CurrentRegisteredIndex: str = ""
@@ -1075,13 +1086,11 @@ class RADGUI_EVENT_MANAGER():
         MethodIndex: Any = None
         IsSubset:bool = False
 
-        RADGUI_CONSOLE.WriteTags = {"RADGUI_EVENT_MANAGER":2}
-
-        for CurrentRegisteredIndex in cls.RegisteredEvents:
+        for CurrentRegisteredIndex in list(cls.RegisteredEvents):
             
             IsSubset = False
                         
-            for CurrentEventsIndex in cls.RegisteredEvents[CurrentRegisteredIndex]["EVENTS"]:
+            for CurrentEventsIndex in list(cls.RegisteredEvents[CurrentRegisteredIndex]["EVENTS"]):
                 
                 IsSubset = set(CurrentEventsIndex.items()).issubset(set(InputEvent.items()))
                 RADGUI_CONSOLE.Write("-- REGISTERED EVENT [{}] - IS SUBSET [{}]".format(CurrentRegisteredIndex,IsSubset))
