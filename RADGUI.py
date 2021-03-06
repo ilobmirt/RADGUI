@@ -1,5 +1,4 @@
-import bpy, json
-import sys
+import bpy, json, sys
 from bpy.props import StringProperty, IntProperty, FloatProperty, BoolProperty, PointerProperty
 from bpy.types import Operator, PropertyGroup, Panel
 from typing import List, Dict, Any
@@ -14,11 +13,11 @@ from typing import List, Dict, Any
 #   library.
 #
 #COPYRIGHT:
-#   Creative Commons Zero v1.0 Universal
-#   https://creativecommons.org/publicdomain/zero/1.0/
+#   Gnu General Public License v3
+#   https://www.gnu.org/licenses/gpl-3.0.txt
 #
 #DEVELOPED BY:
-#[Name] * [Contact]
+#   [Name] * [Contact]
 #   Ilobmirt * ilobmirt@gmail.com
 #==================================================#
 
