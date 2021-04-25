@@ -6,11 +6,25 @@ from . import Console
 #RAD GUI Event Manager
 #==================================================#
 class EventManager():
-    RegisteredEvents: Dict[str, Dict[str, Any]] = {}
+    RegisteredEvents: Dict[str,Dict[str, Dict[str, Any]]] = {}
     IsStrict: bool = False
 
+    @staticmethod
+    def PropertyUpdate(Object: Any, Context: Any, Namespace: str, PropertyName: str) -> None:
+
+        GeneratedEvent : Dict[str, Any] = {
+                "EVENT_ID":PropertyName,
+                "EVENT_CLASS":Object,
+                "CONTEXT":Context,
+                "OBJECT_TYPE":"VARIABLE",
+                "EVENT_TYPE":"VARIABLE_CHANGED",
+                "VALUE":getattr(Object,PropertyName)
+            }
+            
+        EventManager.HandleEvent(Namespace,GeneratedEvent)
+
     @classmethod
-    def AddEvent(cls,MethodID: str,InputEvents: List[Dict[str,Any]]) -> None:
+    def AddEvent(cls,Namespace: str,MethodID: str,InputEvents: List[Dict[str,Any]]) -> None:
         
         Console.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         Console.Write("(RADGUI_EVENT_MANAGER) Adding event for module {}".format(MethodID))
@@ -25,11 +39,11 @@ class EventManager():
         SandboxIndex: Dict[str, Dict[str, Any]] = {}
 
         #Add the method in if it did not exist
-        if (MethodID in cls.RegisteredEvents):
+        if (MethodID in cls.RegisteredEvents[Namespace]):
             
             #Fill out sandbox
             SandboxIndex = {
-                MethodID : cls.RegisteredEvents[MethodID]
+                MethodID : cls.RegisteredEvents[Namespace][MethodID]
             }
             
         else:
@@ -179,11 +193,11 @@ class EventManager():
                 SandboxIndex[MethodID]["EVENTS"].append(InputEventIndex)
 
         #Move the Sandbox back to the Registered Events
-        cls.RegisteredEvents[MethodID] = SandboxIndex[MethodID]
+        cls.RegisteredEvents[Namespace][MethodID] = SandboxIndex[MethodID]
         Console.Write("(RADGUI_EVENT_MANAGER) REGISTERED EVENTS = \n {}".format(str(cls.RegisteredEvents)))
         
     @classmethod
-    def RemoveEvent(cls,MethodID: str,InputEvents: List[Dict[str,Any]] = []) -> None:
+    def RemoveEvent(cls,Namespace: str,MethodID: str,InputEvents: List[Dict[str,Any]] = []) -> None:
         Console.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         Console.Write("(RADGUI_EVENT_MANAGER) Removing event associations associated with method \"{}\"".format(MethodID))
         Console.WriteTags = {"RADGUI_EVENT_MANAGER":2}
@@ -194,13 +208,13 @@ class EventManager():
             return
 
         #Continue if Method exists
-        if (MethodID not in cls.RegisteredEvents):
+        if (MethodID not in cls.RegisteredEvents[Namespace]):
             Console.Write("(RADGUI_EVENT_MANAGER) \"{}\" is already not registered".format(MethodID))
             return
 
         #Without defining any special events in particular, just remove the whole thing
         if (len(InputEvents) == 0):
-            del cls.RegisteredEvents[MethodID]
+            del cls.RegisteredEvents[Namespace][MethodID]
             return
 
         #We must remove all events in MethodID that match InputEvents
@@ -208,13 +222,13 @@ class EventManager():
         CalculatedEventIndex: Dict[str,Any] = {}
 
         for InputEventIndex in InputEvents:
-            for CalculatedEventIndex in list(cls.RegisteredEvents[MethodID]["EVENTS"]):
+            for CalculatedEventIndex in list(cls.RegisteredEvents[Namespace][MethodID]["EVENTS"]):
                 if (InputEventIndex == CalculatedEventIndex):
-                    cls.RegisteredEvents[MethodID]["EVENTS"].remove(CalculatedEventIndex)
+                    cls.RegisteredEvents[Namespace][MethodID]["EVENTS"].remove(CalculatedEventIndex)
                     break
 
     @classmethod
-    def HandleEvent(cls,InputEvent: Dict[str, Any]) -> None:
+    def HandleEvent(cls,Namespace: str,InputEvent: Dict[str, Any]) -> None:
         Console.WriteTags = {"RADGUI_EVENT_MANAGER":1}
         Console.Write("(RADGUI_EVENT_MANAGER) Event Raised \n {}".format(str(InputEvent)))
         Console.WriteTags = {"RADGUI_EVENT_MANAGER":2}
@@ -225,18 +239,18 @@ class EventManager():
         MethodIndex: Any = None
         IsSubset:bool = False
 
-        for CurrentRegisteredIndex in list(cls.RegisteredEvents):
+        for CurrentRegisteredIndex in list(cls.RegisteredEvents[Namespace]):
             
             IsSubset = False
                         
-            for CurrentEventsIndex in list(cls.RegisteredEvents[CurrentRegisteredIndex]["EVENTS"]):
+            for CurrentEventsIndex in list(cls.RegisteredEvents[Namespace][CurrentRegisteredIndex]["EVENTS"]):
                 
                 IsSubset = set(CurrentEventsIndex.items()).issubset(set(InputEvent.items()))
                 Console.Write("-- REGISTERED EVENT [{}] - IS SUBSET [{}]".format(CurrentRegisteredIndex,IsSubset))
 
                 if (IsSubset == True):
                     
-                    for MethodIndex in cls.RegisteredEvents[CurrentRegisteredIndex]["TARGETS"]:
+                    for MethodIndex in cls.RegisteredEvents[Namespace][CurrentRegisteredIndex]["TARGETS"]:
                         try:
                             MethodIndex(InputEvent)
                         except:
