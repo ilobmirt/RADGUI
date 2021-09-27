@@ -5,6 +5,7 @@ programmer defined functions. Usually, ones that they write themselves.
 CLASSES:
     EventManager
 ================================================================================================"""
+import uuid
 from sys import modules as sysModules
 from typing import List, Dict, Any
 from radgui_console import Console
@@ -21,16 +22,16 @@ class EventManager():
     ATTRIBUTES:
     -----------
 
-        _registered_events: Dict[str,Dict[str,List[Dict[str,Any]]]]
+        __registered_events: Dict[uuid.UUID,Dict[str,List[Dict[str,Any]]]]
             Collection of event associations.
             [Project ID] --> [Handler Method Name] --> [Event List]
-            str          --> str                   --> List[Dict[str,Any]]
+            uuid.UUID    --> str                   --> List[Dict[str,Any]]
 
-        _registered_handlers: Dict[str, List[Any]]
+        __registered_handlers: Dict[str, List[Any]]
             Collection of methods to call
             Handler Method Name --> Method List
 
-        _is_strict: Dict[str,bool]
+        __is_strict: Dict[str,bool]
             Collection of strictness definitions by project id
 
     METHODS:
@@ -43,12 +44,12 @@ class EventManager():
         add_handler: bool
         remove_handler: bool
     """
-    _registered_events: Dict[str,Dict[str,List[Dict[str,Any]]]] = {}
-    _registered_handlers: Dict[str, List[Any]] = {}
-    _is_strict: Dict[str,bool] = {}
+    __registered_events: Dict[uuid.UUID,Dict[str,List[Dict[str,Any]]]] = {}
+    __registered_handlers: Dict[str, List[Any]] = {}
+    __is_strict: Dict[str,bool] = {}
 
     @staticmethod
-    def property_update(event_class: Any, context: Any, project_id: str, property_name: str) -> None:
+    def property_update(event_class: Any, context: Any, project_id: uuid.UUID, property_name: str) -> None:
         """
         Static method to be called by blender's property objects.
         Passes event information of the property value change to the event handler
@@ -62,7 +63,7 @@ class EventManager():
             context: Any
                 Context in which this event fired
 
-            project_id: str
+            project_id: uuid.UUID
                 Unique Project Id this event relates to
 
             property_name: str
@@ -86,7 +87,7 @@ class EventManager():
         EventManager.handle_event(project_id,generated_event)
 
     @classmethod
-    def add_event(cls, input_project_id: str, input_method_id: str, input_events: List[ Dict[ str,Any ] ]) -> bool:
+    def add_event(cls, input_project_id: uuid.UUID, input_method_id: str, input_events: List[ Dict[ str,Any ] ]) -> bool:
         """
         Adds a list of events (each event per Dictionary) that would call a handler method.
         Returns True if the event list was successfully updated with the new List. False if
@@ -96,10 +97,10 @@ class EventManager():
         -----------
 
             cls:
-                represents the class itself.
+                Represents the class itself.
 
-            input_project_id: str
-                String based UUID represents the project working with the event system
+            input_project_id: uuid.UUID
+                Unique id of the project working with the event system
 
             input_method_id: str
                 String representing the handler method to call when the input events happen
@@ -116,7 +117,6 @@ class EventManager():
                 Represents if the event has been updated or not.
         """
         result:bool = False
-        input_project_id = input_project_id.strip()
         input_method_id = input_method_id.strip()
 
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":1})
@@ -124,7 +124,7 @@ class EventManager():
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":2})
 
         #Method name and at least one event should be provided
-        if (input_project_id == "") or (input_method_id == "") or (len(input_events) == 0):
+        if (input_method_id == "") or (len(input_events) == 0):
             Console.write(input_project_id,"(RADGUI_EVENT_MANAGER) Empty arguments provided to event registration")
             return result
 
@@ -132,14 +132,14 @@ class EventManager():
         sandbox_event: List[Dict[str,Any]] = []
 
         #Add the method in if it did not exist
-        if input_method_id in cls._registered_events[input_project_id]:
+        if input_method_id in cls.__registered_events[input_project_id]:
 
             #Fill out sandbox
-            sandbox_event = cls._registered_events[input_project_id][input_method_id]
+            sandbox_event = cls.__registered_events[input_project_id][input_method_id]
 
         #At this point, we try and make sure that the handler exists or try adding it
         does_have_handler: bool = False
-        if input_method_id not in cls._registered_handlers:
+        if input_method_id not in cls.__registered_handlers:
             does_have_handler = cls.add_handler(input_project_id,input_method_id)
         else:
             does_have_handler = True
@@ -203,14 +203,14 @@ class EventManager():
                 sandbox_event[input_method_id].append(index_event)
 
         #Move the Sandbox back to the Registered Events
-        cls._registered_events[input_project_id][input_method_id] = sandbox_event
-        Console.write(input_project_id,f"(RADGUI_EVENT_MANAGER) REGISTERED EVENTS = \n {str(cls._registered_events)}")
+        cls.__registered_events[input_project_id][input_method_id] = sandbox_event
+        Console.write(input_project_id,f"(RADGUI_EVENT_MANAGER) REGISTERED EVENTS = \n {str(cls.__registered_events)}")
         result = True
 
         return result
 
     @classmethod
-    def remove_event(cls, input_project_id: str, input_method_id: str, input_events: List[ Dict[ str,Any ] ]) -> bool:
+    def remove_event(cls, input_project_id: uuid.UUID, input_method_id: str, input_events: List[ Dict[ str,Any ] ]) -> bool:
         """
         Removes a list of events that are currently tied to a handler method.
         A blank input event list would remove all events from a project and its ties to a handler method.
@@ -220,10 +220,10 @@ class EventManager():
         -----------
 
             cls:
-                represents the class itself.
+                Represents the class itself.
 
-            input_project_id: str
-                String based UUID represents the project working with the event system
+            input_project_id: uuid.UUID
+                Unique id representing the project working with the event system
 
             input_method_id: str
                 String representing the handler method to remove the events list from
@@ -242,7 +242,6 @@ class EventManager():
         """
         result:bool = False
         is_content_removed:bool = False
-        input_project_id = input_project_id.strip()
         input_method_id = input_method_id.strip()
 
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":1})
@@ -255,13 +254,13 @@ class EventManager():
             return result
 
         #Continue if Method exists
-        if input_method_id not in cls._registered_events[input_project_id]:
+        if input_method_id not in cls.__registered_events[input_project_id]:
             Console.write(input_project_id,f"(RADGUI_EVENT_MANAGER) method\"{input_method_id}\" is already not registered in the project")
             return result
 
         #Without defining any special events in particular, just remove the whole thing
         if len(input_events) == 0:
-            del cls._registered_events[input_project_id][input_method_id]
+            del cls.__registered_events[input_project_id][input_method_id]
             is_content_removed = True
         else:
             #We must remove all events in MethodID that match InputEvents
@@ -269,9 +268,9 @@ class EventManager():
             index_calculated_event: Dict[str,Any] = {}
 
             for index_event in input_events:
-                for index_calculated_event in list(cls._registered_events[input_project_id][input_method_id]):
+                for index_calculated_event in list(cls.__registered_events[input_project_id][input_method_id]):
                     if index_event == index_calculated_event:
-                        cls._registered_events[input_project_id][input_method_id].remove(index_calculated_event)
+                        cls.__registered_events[input_project_id][input_method_id].remove(index_calculated_event)
                         is_content_removed = True
                         break
 
@@ -280,7 +279,7 @@ class EventManager():
             index_project: Dict[str,Any] = {}
             does_handler_exist: bool = False
 
-            for index_project in cls._registered_events:
+            for index_project in cls.__registered_events:
                 if input_method_id in index_project:
                     does_handler_exist = True
                     break
@@ -294,7 +293,7 @@ class EventManager():
         return result
 
     @classmethod
-    def handle_event(cls, input_project_id: str, input_event: Dict[ str,Any ]) -> None:
+    def handle_event(cls, input_project_id: uuid.UUID, input_event: Dict[ str,Any ]) -> None:
         """
         Take an event based dictionary and determine which handler method to call if need be.
 
@@ -304,8 +303,8 @@ class EventManager():
             cls:
                 Represents the class itself.
 
-            input_project_id: str
-                String based UUID represents the project working with the event system
+            input_project_id: uuid.UUID
+                Uniqu id that represents the project working with the event system
 
             input_event: Dict[ str,Any ]
                 Dictionary representing the event that happened.
@@ -313,10 +312,8 @@ class EventManager():
         RETURNS:
         --------
 
-            NONE
+            None
         """
-        input_project_id=input_project_id.strip()
-
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":1})
         Console.write(input_project_id,f"(RADGUI_EVENT_MANAGER) Event Raised \n {str(input_event)}")
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":2})
@@ -327,18 +324,18 @@ class EventManager():
         index_method: Any = None
         is_subset:bool = False
 
-        for index_handler in list(cls._registered_events[input_project_id]):
+        for index_handler in list(cls.__registered_events[input_project_id]):
 
             is_subset = False
 
-            for index_event in list(cls._registered_events[input_project_id][index_handler]):
+            for index_event in list(cls.__registered_events[input_project_id][index_handler]):
 
                 is_subset = set(index_event.items()).issubset(set(input_event.items()))
                 Console.write(input_project_id,f"-- REGISTERED EVENT [{index_handler}] - IS SUBSET [{is_subset}]")
 
                 if is_subset is True:
 
-                    for index_method in cls._registered_handlers[index_handler]:
+                    for index_method in cls.__registered_handlers[index_handler]:
                         try:
                             index_method(input_event)
                         except:
@@ -346,7 +343,7 @@ class EventManager():
                             continue
 
     @classmethod
-    def add_handler(cls, input_project_id: str, input_handler_name: str) -> bool:
+    def add_handler(cls, input_project_id: uuid.UUID, input_handler_name: str) -> bool:
         """
         Registers a method to call for events. Returns True when the method reference has been added
         to the event manager. Returns False if the method failed to be added to the event manager
@@ -357,8 +354,8 @@ class EventManager():
             cls:
                 Represents the class itself.
 
-            input_project_id: str
-                String based UUID represents the project working with the event system
+            input_project_id: uuid.UUID
+                Unique id that represents the project working with the event system
 
             input_handler_name: str
                 Name of the handler method to add in the format "MODULE.CLASS.METHOD"
@@ -373,20 +370,15 @@ class EventManager():
 
         result:bool = False
         input_handler_name = input_handler_name.strip()
-        input_project_id = input_project_id.strip()
 
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":1})
         Console.write(input_project_id, f"(RADGUI_EVENT_MANAGER) Adding handler method {input_handler_name}")
         Console.set_write_tags(input_project_id,{"RADGUI_EVENT_MANAGER":2})
 
-        if input_project_id == "":
-            Console.write(input_project_id, "(RADGUI_EVENT_MANAGER) no project_id given to add for handler")
-            return result
-
-        if input_project_id not in cls._is_strict:
+        if input_project_id not in cls.__is_strict:
             is_strict = False
         else:
-            is_strict = cls._is_strict[input_project_id]
+            is_strict = cls.__is_strict[input_project_id]
 
         if input_handler_name == "":
             Console.write(input_project_id, "(RADGUI_EVENT_MANAGER) nothing given to add for handler")
@@ -473,7 +465,7 @@ class EventManager():
             return result
 
         #Add methods to list of class handler methods
-        cls._registered_handlers[input_handler_name.strip()] = considered_methods
+        cls.__registered_handlers[input_handler_name.strip()] = considered_methods
         Console.write(input_project_id, f"(RADGUI_EVENT_MANAGER) Handler method(s) \"{input_handler_name}\" added to list of registered handlers")
         result = True
 
@@ -503,26 +495,26 @@ class EventManager():
         result:bool = False
         input_handler_name = input_handler_name.strip()
 
-        Console.set_write_tags("",{"RADGUI_EVENT_MANAGER":1})
-        Console.write("", f"(RADGUI_EVENT_MANAGER) Removing handler method {input_handler_name}")
-        Console.set_write_tags("",{"RADGUI_EVENT_MANAGER":2})
+        Console.set_write_tags(None,{"RADGUI_EVENT_MANAGER":1})
+        Console.write(None, f"(RADGUI_EVENT_MANAGER) Removing handler method {input_handler_name}")
+        Console.set_write_tags(None,{"RADGUI_EVENT_MANAGER":2})
 
         if input_handler_name == "":
-            Console.write("", "(RADGUI_EVENT_MANAGER) No handler method given")
+            Console.write(None, "(RADGUI_EVENT_MANAGER) No handler method given")
             return result
 
-        if input_handler_name not in cls._registered_handlers:
-            Console.write("", f"(RADGUI_EVENT_MANAGER) Handler method(s) \"{input_handler_name}\" already does not exist in list of registered handlers")
+        if input_handler_name not in cls.__registered_handlers:
+            Console.write(None, f"(RADGUI_EVENT_MANAGER) Handler method(s) \"{input_handler_name}\" already does not exist in list of registered handlers")
             return result
 
-        cls._registered_handlers.popitem(input_handler_name)
-        Console.write("", f"(RADGUI_EVENT_MANAGER) Handler method(s) \"{input_handler_name}\" removed from list of registered handlers")
+        cls.__registered_handlers.popitem(input_handler_name)
+        Console.write(None, f"(RADGUI_EVENT_MANAGER) Handler method(s) \"{input_handler_name}\" removed from list of registered handlers")
         result = True
 
         return result
 
     @classmethod
-    def set_strictness(cls, input_project_id: str, strictness_value: bool) -> None:
+    def set_strictness(cls, input_project_id: uuid.UUID, strictness_value: bool) -> None:
         """
         Set the strictness for a project when it comes to adding method refrences
 
@@ -532,8 +524,8 @@ class EventManager():
             cls:
                 Represents the class itself.
 
-            input_project_id: str
-                String based UUID represents the project working with the event system
+            input_project_id: uuid.UUID
+                Unique id that represents the project working with the event system
 
             strictness_value: bool
                 Represents the strictness of the handler method matching. True = Exact mathcing.
@@ -543,11 +535,10 @@ class EventManager():
 
             NONE
         """
-        input_project_id = input_project_id.strip()
-        cls._is_strict[input_project_id]=strictness_value
+        cls.__is_strict[input_project_id]=strictness_value
 
     @classmethod
-    def get_strictness(cls, input_project_id: str) -> bool:
+    def get_strictness(cls, input_project_id: uuid.UUID) -> bool:
         """
         Gets the strictness of a project when it comes to adding method refrences
 
@@ -557,8 +548,8 @@ class EventManager():
             cls:
                 Represents the class itself.
 
-            input_project_id: str
-                String based UUID represents the project working with the event system
+            input_project_id: uuid.UUID
+                Unique id that represents the project working with the event system
 
         RETURNS:
         --------
@@ -567,9 +558,8 @@ class EventManager():
                 The value of strictness associated with the project
         """
         result: bool = False
-        input_project_id = input_project_id.strip()
 
-        if input_project_id in cls._is_strict:
-            result = cls._is_strict[input_project_id]
+        if input_project_id in cls.__is_strict:
+            result = cls.__is_strict[input_project_id]
 
         return result
