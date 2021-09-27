@@ -9,7 +9,20 @@ from . import PropertyGroupShell, OperatorShell, PanelShell
 class Project():
 
     #Initialize
-    def __init__(self):
+    def __init__(self, **input_args):
+
+        input_id:uuid.UUID = None
+        if "id" in input_args:
+            input_id = input_args["id"]
+
+        input_filename:str = ""
+        if "filename" in input_args:
+            input_filename = input_args["filename"]
+
+        input_json:Dict[str,Any] = {}
+        if "json"  not in input_args:
+            input_json = input_args["json"]
+
         self.Namespace: str = "radgui_project{}".format(uuid.uuid4().hex)
         self.Events: Dict[str,Any] = {
             "STRICT":False,
