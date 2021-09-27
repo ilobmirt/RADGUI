@@ -9,6 +9,7 @@ CLASSES:
     Console
 ================================================================================================"""
 from typing import Dict, List, Any # pylint: disable=unused-import
+import uuid
 import bpy
 
 #==================================================#
@@ -21,23 +22,23 @@ class Console():
     ATTRIBUTES:
     -----------
 
-        _output_filter: Dict[ str,Dict[ str,int ] ]
+        __output_filter: Dict[ uuid.UUID,Dict[ str,int ] ]
             Filter of output. Limiting any message to a certain number
             of categories up to a certain verbosity level.
             [project_id] --> {"category label",verbosity level}
 
-        _write_tags: Dict[ str,Dict[str,int] ]
+        __write_tags: Dict[ uuid.UUID,Dict[str,int] ]
             The category and verbosity level of output by project.
             [project_id] --> {"category label",verbosity level}
 
-        _output_medium: Dict[ str,str ]
+        __output_medium: Dict[ uuid.UUID,str ]
             The output medium per project.
             Valid mediums are:
                 * CONSOLE   - Standard OS console output
                 * BLENDER   - Blender's internal python console
                 * FILE      - Plain Text File
 
-        _output_file: Dict[ str,str ]
+        __output_file: Dict[ uuid.UUID,str ]
             The path to the file being written to by project id.
 
     METHODS:
@@ -48,18 +49,18 @@ class Console():
         set_medium: None
         add_project_id: None
         remove_project_id: None
-        _print_blender: None
-        _print_file: None
+        __print_blender: None
+        __print_file: None
         write: None
 
     """
-    _output_filter: Dict[ str,Dict[ str,int ] ] = {}
-    _write_tags: Dict[ str,Dict[str,int] ] = {}
-    _output_medium: Dict[ str,str ] = {}
-    _output_file: Dict[ str,str ] = {}
+    __output_filter: Dict[ uuid.UUID,Dict[ str,int ] ] = {}
+    __write_tags: Dict[ uuid.UUID,Dict[str,int] ] = {}
+    __output_medium: Dict[ uuid.UUID,str ] = {}
+    __output_file: Dict[ uuid.UUID,str ] = {}
 
     @classmethod
-    def set_write_tags(cls, input_project_id: str, input_tags: Dict[ str,int ]) -> None:
+    def set_write_tags(cls, input_project_id: uuid.UUID, input_tags: Dict[ str,int ]) -> None:
         """
         Set the writing tags for radgui console output.
         These tags will be used with console.write
@@ -70,7 +71,7 @@ class Console():
             cls:
                 Represents the Console class itself
 
-            input_project_id: str
+            input_project_id: uuid.UUID
                 Unique Project ID in which write tags are being set
 
             input_tags: Dict[ str,int ]
@@ -84,18 +85,13 @@ class Console():
             None
 
         """
-        input_project_id = input_project_id.strip()
-
-        if input_project_id == "":
+        if input_project_id not in cls.__write_tags:
             return
 
-        if input_project_id not in cls._write_tags:
-            return
-
-        cls._write_tags[input_project_id] = input_tags
+        cls.__write_tags[input_project_id] = input_tags
 
     @classmethod
-    def set_filter(cls, input_project_id: str, input_filters: Dict[ str,int ]) -> None:
+    def set_filter(cls, input_project_id: uuid.UUID, input_filters: Dict[ str,int ]) -> None:
         """
         Set the filters for project output by category and level of verbosity.
         These filters will be used with console.write
@@ -106,7 +102,7 @@ class Console():
             cls:
                 Represents the Console class itself
 
-            input_project_id: str
+            input_project_id: uuid.UUID
                 Unique Project ID in which write filters are being set
 
             input_filters: Dict[ str,int ]
@@ -120,13 +116,13 @@ class Console():
             None
 
         """
-        if input_project_id not in cls._output_filter:
+        if input_project_id not in cls.__output_filter:
             return
 
-        cls._output_filter[input_project_id] = input_filters
+        cls.__output_filter[input_project_id] = input_filters
 
     @classmethod
-    def set_medium(cls, input_project_id: str, input_medium: str, input_filename: str = "") -> None:
+    def set_medium(cls, input_project_id: uuid.UUID, input_medium: str, input_filename: str = "") -> None:
         """
         Sets the medium of output the project will use for output.
 
@@ -136,7 +132,7 @@ class Console():
             cls:
                 Represents the Console class itself
 
-            input_project_id: str
+            input_project_id: uuid.UUID
                 Unique Project ID in which the output medium is being set
 
             input_medium: str
@@ -155,11 +151,10 @@ class Console():
             None
 
         """
-        input_project_id = input_project_id.strip()
-        input_medium = input_medium.strip()
+        input_medium = input_medium.strip().upper()
         input_filename = input_filename.strip()
 
-        if input_project_id not in cls._output_medium:
+        if input_project_id not in cls.__output_medium:
             return
 
         if input_medium not in ["CONSOLE","BLENDER","FILE"]:
@@ -169,12 +164,12 @@ class Console():
             return
 
         if (input_medium == "FILE") and (input_filename != ""):
-            cls._output_file[input_project_id] = input_filename
+            cls.__output_file[input_project_id] = input_filename
 
-        cls._output_medium[input_project_id] = input_medium
+        cls.__output_medium[input_project_id] = input_medium
 
     @classmethod
-    def add_project_id(cls, input_project_id: str) -> None:
+    def add_project_id(cls, input_project_id: uuid.UUID) -> None:
         """
         Adds a project to the console
 
@@ -184,7 +179,7 @@ class Console():
             cls:
                 Represents the Console class itself
 
-            input_project_id: str
+            input_project_id: uuid.UUID
                 Unique Project ID in which to be added to console
 
         RETURNS:
@@ -193,18 +188,16 @@ class Console():
             None
 
         """
-        input_project_id = input_project_id.strip()
-
-        if (input_project_id in cls._output_filter) or (input_project_id in cls._write_tags) or (input_project_id in cls._output_medium) or (input_project_id in cls._output_file):
+        if (input_project_id in cls.__output_filter) or (input_project_id in cls.__write_tags) or (input_project_id in cls.__output_medium) or (input_project_id in cls.__output_file):
             return
 
-        cls._output_filter[input_project_id] = {}
-        cls._write_tags[input_project_id] = {}
-        cls._output_medium[input_project_id] = "CONSOLE"
-        cls._output_file[input_project_id] = ""
+        cls.__output_filter[input_project_id] = {}
+        cls.__write_tags[input_project_id] = {}
+        cls.__output_medium[input_project_id] = "CONSOLE"
+        cls.__output_file[input_project_id] = ""
 
     @classmethod
-    def remove_project_id(cls, input_project_id) -> None:
+    def remove_project_id(cls, input_project_id: uuid.UUID) -> None:
         """
         Removes a project from the console
 
@@ -214,7 +207,7 @@ class Console():
             cls:
                 Represents the Console class itself
 
-            input_project_id: str
+            input_project_id: uuid.UUID
                 Unique Project ID in which to be removed from the console
 
         RETURNS:
@@ -223,19 +216,17 @@ class Console():
             None
 
         """
-        input_project_id = input_project_id.strip()
-
-        if input_project_id in cls._output_filter:
-            cls._output_filter.pop(input_project_id)
-        if input_project_id in cls._write_tags:
-            cls._write_tags.pop(input_project_id)
-        if input_project_id in cls._output_medium:
-            cls._output_medium.pop(input_project_id)
-        if input_project_id in cls._output_file:
-            cls._output_file.pop(input_project_id)
+        if input_project_id in cls.__output_filter:
+            cls.__output_filter.pop(input_project_id)
+        if input_project_id in cls.__write_tags:
+            cls.__write_tags.pop(input_project_id)
+        if input_project_id in cls.__output_medium:
+            cls.__output_medium.pop(input_project_id)
+        if input_project_id in cls.__output_file:
+            cls.__output_file.pop(input_project_id)
 
     @classmethod
-    def _print_blender(cls,input_message: str) -> None:
+    def __print_blender(cls,input_message: str) -> None:
         """
         Output a message to the blender python console
 
@@ -274,7 +265,7 @@ class Console():
                     bpy.ops.console.scrollback_append(text=input_message,type="OUTPUT")
 
     @classmethod
-    def _print_file(cls, input_message: str, input_filename: str) -> None:
+    def __print_file(cls, input_message: str, input_filename: str) -> None:
         """
         Appends a message to a destination file
 
@@ -300,7 +291,7 @@ class Console():
             output_file.write(input_message)
 
     @classmethod
-    def write(cls,input_project_id: str, input_message: str) -> None:
+    def write(cls,input_project_id: uuid.UUID, input_message: str) -> None:
         """
         Outputs a message if project's write tags meets its output filters
 
@@ -310,7 +301,7 @@ class Console():
             cls:
                 Represents the Console class itself
 
-            input_project_id: str
+            input_project_id: uuid.UUID
                 Unique Project ID to compare its write tags to its output filters
 
             input_message: str
@@ -324,29 +315,58 @@ class Console():
         """
 
         #We need the Filter and Tag information before we go any further
-        if (input_project_id in cls._output_filter) or (input_project_id in cls._write_tags) or (input_project_id in cls._output_medium) or (input_project_id in cls._output_file):
+        if (input_project_id not in cls.__output_filter) or (input_project_id not in cls.__write_tags) or (input_project_id not in cls.__output_medium) or (input_project_id not in cls.__output_file):
             return
 
         can_write: bool = False
         write_key: str = ""
         write_value: int = 0
-        output_message: str = f"[NAMESPACE \"{input_project_id}\", TAGS {cls._write_tags[input_project_id]}] - {input_message}"
+        output_message: str = f"[PROJECT UUID \"{str(input_project_id)}\", TAGS {cls.__write_tags[input_project_id]}] - {input_message}"
 
         #Determine if message is to be written in screen
         #No filter or Tags = All Permitted
-        if(cls._output_filter[input_project_id] != {}) and (cls._write_tags[input_project_id] != {}):
-            for write_key, write_value in cls._write_tags[input_project_id].items():
-                if write_key in cls._output_filter[input_project_id]:
-                    if write_value <= cls._output_filter[input_project_id][write_key]:
+        if(cls.__output_filter[input_project_id] != {}) and (cls.__write_tags[input_project_id] != {}):
+            for write_key, write_value in cls.__write_tags[input_project_id].items():
+                if write_key in cls.__output_filter[input_project_id]:
+                    if write_value <= cls.__output_filter[input_project_id][write_key]:
                         can_write = True
                         break
         else:
             can_write = True
 
         if can_write is True:
-            if cls._output_medium[input_project_id] == "CONSOLE":
+            if cls.__output_medium[input_project_id] == "CONSOLE":
                 print(output_message)
-            if cls._output_medium[input_project_id] == "BLENDER":
-                cls._print_blender(output_message)
-            if cls._output_medium[input_project_id] == "FILE":
-                cls._print_file(output_message,cls._output_file[input_project_id])
+            if cls.__output_medium[input_project_id] == "BLENDER":
+                cls.__print_blender(output_message)
+            if cls.__output_medium[input_project_id] == "FILE":
+                cls.__print_file(output_message,cls.__output_file[input_project_id])
+
+    @classmethod
+    def register(cls):
+        """
+        Reserves space for system messages. UUID = None
+
+        PARAMETERS:
+        -----------
+
+            cls:
+                Represents the class itself.
+
+        RETURNS:
+        --------
+
+            None
+        """
+        cls.__output_filter = {
+            None:{}
+        }
+        cls.__write_tags = {
+            None:{}
+        }
+        cls.__output_medium = {
+            None:"CONSOLE"
+        }
+        cls.__output_file = {
+            None:""
+        }
