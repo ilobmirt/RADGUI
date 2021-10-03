@@ -76,6 +76,7 @@ class EventManager():
         """
 
         generated_event : Dict[str, Any] = {
+                "PROJECT_ID":project_id,
                 "EVENT_ID":property_name,
                 "EVENT_CLASS":event_class,
                 "CONTEXT":context,
