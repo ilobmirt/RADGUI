@@ -7,6 +7,7 @@ CLASSES:
 import uuid
 from typing import List, Dict, Any # pylint: disable=unused-import
 import bpy
+from bpy.types import UILayout
 from radgui_system import System as radguiSystem
 from event_manager import EventManager
 
@@ -83,6 +84,7 @@ class MessageDialog(bpy.types.Operator):
         #Generate event
         generated_event:Dict[str,Any] = {
             "EVENT_TYPE":f"DIALOG_{event_type}",
+            "PROJECT_ID":self.project_id,
             "EVENT_ID":self.event_id,
             "MESSAGE":self.message,
             "CONTEXT":context
@@ -174,5 +176,5 @@ class MessageDialog(bpy.types.Operator):
 
             None
         """
-        self.layout.label(text=self.message)
-        self.layout.label(text="")
+        layout:UILayout = self.layout
+        layout.label(text=self.message)

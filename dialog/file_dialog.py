@@ -89,6 +89,7 @@ class FileDialog(bpy.types.Operator):
         #Generate event
         generated_event:Dict[str,Any] = {
             "EVENT_TYPE":f"DIALOG_{event_type}",
+            "PROJECT_ID":self.project_id,
             "EVENT_ID":self.event_id,
             "VALUE":self.value,
             "CONTEXT":context
