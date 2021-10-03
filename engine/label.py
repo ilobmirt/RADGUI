@@ -17,7 +17,7 @@ class Label():
     ATTRIBUTES:
     -----------
         _defaults : Dict[str, Any]
-            default values of the parameters given to a row.
+            default values of the parameters given to a label.
             Meant to be a read only value.
 
         text : str
@@ -36,8 +36,8 @@ class Label():
             Override automatic icon of the item
 
         value : Dict[str,Any]
-            Getter: Represents the row as a Dictionary object
-            Setter: Configures the row object
+            Getter: Represents the label as a Dictionary object
+            Setter: Configures the label object
 
     METHODS:
     --------
@@ -69,7 +69,7 @@ class Label():
         PARAMETERS:
         -----------
 
-            self
+            self:
                 References the current instance of the label class
 
         RETURNS:
@@ -107,7 +107,7 @@ class Label():
         PARAMETERS:
         -----------
 
-            self
+            self:
                 References the current instance of the label class
 
             input_attributes : Dict[str, Any]
