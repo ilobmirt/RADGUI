@@ -13,6 +13,8 @@ from radgui_console import Console
 from project.project import Project
 from dialog.message_dialog import MessageDialog
 from dialog.file_dialog import FileDialog
+from dialog.input_dialog import InputDialog
+from dialog.login_dialog import LoginDialog
 
 #==================================================#
 #RAD GUI System Manager
@@ -75,7 +77,8 @@ class System():
         RETURNS:
         --------
 
-            None
+            result: Project
+                This is a new instance of a RADGUI project with its own unique project id.
 
         """
         result: Project = None
@@ -346,11 +349,193 @@ class System():
 
     @classmethod
     def input_dialog(cls,**input_args) -> None:
-        """..."""
+        """
+        Generate a plaintext input dialog for the user.
+
+        PARAMETERS:
+        -----------
+
+            cls:
+                Represents the class itself
+
+            **input_args:
+                A variable list of arguments passed to it.
+                The list that this program will look at is the following...
+
+                * title: str -
+                    Mandatory. The words used in the title of the dialog box.
+
+                * message: str -
+                    Mandatory. The message used in the dialog body
+
+                * width: int -
+                    The width in pixels that the dialog will take
+
+                * project_id: uuid.UUID -
+                    Mandatory. The unique id of the project this dialog is associated with.
+                    Used in event handling.
+
+                * event_id: str -
+                    Mandatory. The name of the event to generate.
+                    Used in event handling
+
+        RETURNS:
+        --------
+
+            None
+        """
+        Console.set_write_tags(None,{"RADGUI_SYSTEM",1})
+        Console.write(None,"(RADGUI_SYSTEM) Creating a temporary text input dialog")
+        Console.set_write_tags(None,{"RADGUI_SYSTEM",2})
+
+        if ("title" not in input_args) or ("message" not in input_args):
+            Console.write(None,"(RADGUI_SYSTEM) No title or message provided to the text input dialog")
+            return
+
+        if ("project_id" not in input_args) or ("event_id" not in input_args):
+            Console.write(None,"(RADGUI_SYSTEM) No event information provided to the text input dialog")
+            return
+
+        input_title:str = input_args["title"]
+        input_message:str = input_args["message"]
+        input_project_id:uuid.UUID = input_args["project_id"]
+        input_event_id:str = input_args["event_id"]
+
+        input_width:int = 400
+        if "width" in input_args:
+            input_width = input_args["width"]
+
+        autogen_id: uuid.UUID = None
+        while True:
+            autogen_id = uuid.uuid4()
+            if autogen_id not in cls.__dialog_collection:
+                break
+
+        autogen_idname:str = f"radgui_.dialog_{autogen_id.hex}"
+        autogen_classname:str = f"OPERATOR_OT_{autogen_id.hex}_TEXT_INPUT_DIALOG"
+        autogen_annotations: Dict[str,Any] = {
+            "input_string": bpy.props.StringProperty(
+                    description=input_message,
+                    default=""
+                    )
+        }
+
+        autogen_attributes:Dict[str,Any] = {
+            "bl_idname":autogen_idname,
+            "bl_label":input_title,
+            "dialog_id":autogen_id,
+            "project_id":input_project_id,
+            "event_id":input_event_id,
+            "width":input_width,
+            "__annotations__":autogen_annotations
+        }
+
+        autogen_class = type(autogen_classname,(InputDialog,),autogen_attributes)
+
+        Console.write(None,f"(RADGUI_SYSTEM) Text Input dialog \"{autogen_id.hex}\" created titled \"{input_title}\"")
+
+        cls.__dialog_collection.update({autogen_id:autogen_class})
+        cls.__dialog_handler()
 
     @classmethod
     def login_dialog(cls,**input_args) -> None:
-        """..."""
+        """
+        Generate a username & password login input dialog for the user.
+
+        PARAMETERS:
+        -----------
+
+            cls:
+                Represents the class itself
+
+            **input_args:
+                A variable list of arguments passed to it.
+                The list that this program will look at is the following...
+
+                * title: str -
+                    Mandatory. The words used in the title of the dialog box.
+
+                * message: str -
+                    Mandatory. The message used in the dialog body
+
+                * width: int -
+                    The width in pixels that the dialog will take
+
+                * project_id: uuid.UUID -
+                    Mandatory. The unique id of the project this dialog is associated with.
+                    Used in event handling.
+
+                * event_id: str -
+                    Mandatory. The name of the event to generate.
+                    Used in event handling
+
+        RETURNS:
+        --------
+
+            None
+        """
+        Console.set_write_tags(None,{"RADGUI_SYSTEM",1})
+        Console.write(None,"(RADGUI_SYSTEM) Creating a username & password login input dialog")
+        Console.set_write_tags(None,{"RADGUI_SYSTEM",2})
+
+        if ("title" not in input_args) or ("message" not in input_args):
+            Console.write(None,"(RADGUI_SYSTEM) No title or message provided to the username & password login input dialog")
+            return
+
+        if ("project_id" not in input_args) or ("event_id" not in input_args):
+            Console.write(None,"(RADGUI_SYSTEM) No event information provided to the username & password login input dialog")
+            return
+
+        input_title:str = input_args["title"]
+        input_message:str = input_args["message"]
+        input_project_id:uuid.UUID = input_args["project_id"]
+        input_event_id:str = input_args["event_id"]
+
+        input_width:int = 400
+        if "width" in input_args:
+            input_width = input_args["width"]
+
+        autogen_id: uuid.UUID = None
+        while True:
+            autogen_id = uuid.uuid4()
+            if autogen_id not in cls.__dialog_collection:
+                break
+
+        autogen_idname:str = f"radgui_.dialog_{autogen_id.hex}"
+        autogen_classname:str = f"OPERATOR_OT_{autogen_id.hex}_LOGIN_INPUT_DIALOG"
+        autogen_annotations: Dict[str,Any] = {
+            "user_string": bpy.props.StringProperty(
+                    description="USERNAME:",
+                    subtype="PASSWORD",
+                    default=""
+                    ),
+            "password_string": bpy.props.StringProperty(
+                description="PASSWORD:",
+                subtype="PASSWORD",
+                default=""
+            ),
+            "show_password": bpy.props.BoolProperty(
+                default=False
+            )
+        }
+
+        autogen_attributes:Dict[str,Any] = {
+            "bl_idname":autogen_idname,
+            "bl_label":input_title,
+            "message":input_message,
+            "dialog_id":autogen_id,
+            "project_id":input_project_id,
+            "event_id":input_event_id,
+            "width":input_width,
+            "__annotations__":autogen_annotations
+        }
+
+        autogen_class = type(autogen_classname,(LoginDialog,),autogen_attributes)
+
+        Console.write(None,f"(RADGUI_SYSTEM) Username & Password Login Input dialog \"{autogen_id.hex}\" created titled \"{input_title}\"")
+
+        cls.__dialog_collection.update({autogen_id:autogen_class})
+        cls.__dialog_handler()
 
     @classmethod
     def dialog_cleanup(cls,input_dialog_id:uuid.UUID) -> None:
