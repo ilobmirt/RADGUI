@@ -38,11 +38,17 @@ class EventManager():
     --------
 
         property_update: None
-        add_event: bool
+        register_event: bool
         remove_event: bool
         handle_event: None
         add_handler: bool
         remove_handler: bool
+        set_strictness
+        get_strictness
+        get_project_value
+        set_project_value
+        register_project
+        unregister_project
     """
     __registered_events: Dict[uuid.UUID,Dict[str,List[Dict[str,Any]]]] = {}
     __registered_handlers: Dict[str, List[Any]] = {}
@@ -88,10 +94,10 @@ class EventManager():
         EventManager.handle_event(project_id,generated_event)
 
     @classmethod
-    def add_event(cls, input_project_id: uuid.UUID, input_method_id: str, input_events: List[ Dict[ str,Any ] ]) -> bool:
+    def register_event(cls, input_project_id: uuid.UUID, input_method_id: str, input_events: List[ Dict[ str,Any ] ]) -> bool:
         """
-        Adds a list of events (each event per Dictionary) that would call a handler method.
-        Returns True if the event list was successfully updated with the new List. False if
+        Adds or Modifies a list of events (each event per Dictionary) that would call a handler method.
+        Returns True if the event list was successfully updated or added with the new List. False if
         we were unable to update the events List with new data.
 
         PARAMETERS:
@@ -562,5 +568,134 @@ class EventManager():
 
         if input_project_id in cls.__is_strict:
             result = cls.__is_strict[input_project_id]
+
+        return result
+
+    @classmethod
+    def get_project_value(cls, input_project_id:uuid.UUID) -> Dict[str,List[Dict[str,Any]]]:
+        """
+        Returns the value of the project's registered events as a dictionary
+
+        PARAMETERS:
+        -----------
+            cls:
+                References the class itself
+
+            input_project_id: uuid.UUID
+                The project id to get the value from
+
+        RETURNS:
+        --------
+            result: Dict[str,List[Dict[str,Any]]]
+                The value of the registered events within the event
+                handler for the given project UUID
+
+        """
+        result: Dict[str,List[Dict[str,Any]]] = {}
+
+        if input_project_id in cls.__registered_events:
+            result = cls.__registered_events[input_project_id]
+
+        return result
+
+    @classmethod
+    def set_project_value(cls, input_project_id:uuid.UUID, input_value:Dict[str,List[Dict[str,Any]]]) -> bool:
+        """
+        Configures the registered events of a given project
+
+        PARAMETERS:
+        -----------
+            cls:
+                References the class itself
+
+            input_project_id: uuid.UUID
+                The unique id of the project whos events we are configuring
+
+            input_value: Dict[str,List[Dict[str,Any]]]
+                A dictionary value of methods and a list of all events associated
+                with the method to call. Will get optimized later.
+
+        RETURNS:
+        --------
+            result: bool
+                The result of the operation. True if successful
+        """
+        result: bool = False
+
+        if input_project_id not in cls.__registered_events:
+            return result
+
+        to_remove:List[str] = []
+
+        for key_check_remove in cls.__registered_events[input_project_id].keys():
+            if key_check_remove not in input_value:
+                to_remove.append(key_check_remove)
+
+        for key_remove in to_remove:
+            cls.remove_event(input_project_id,key_remove,[])
+
+        for key_update in input_value.keys():
+            cls.register_event(input_project_id,key_update,input_value[key_update])
+
+        result = True
+        return result
+
+    @classmethod
+    def register_project(cls,input_project_id:uuid.UUID) -> bool:
+        """
+        Registers a project with the event system
+
+        PARAMETERS:
+        -----------
+            cls:
+                References the class itself
+
+            input_project_id: uuid.UUID
+                The unique id of the project we are registering with
+
+        RETURNS:
+        --------
+            result: bool
+                The result of the operation. True if successful
+        """
+        result:bool = False
+
+        #We shouldn't add a project if it didn't already exist
+        if input_project_id in cls.__registered_events:
+            return result
+
+        cls.__registered_events.update(input_project_id)
+        result = True
+
+        return result
+
+    @classmethod
+    def unregister_project(cls,input_project_id:uuid.UUID) -> bool:
+        """
+        Removes a project from the event system, its, methods, and all events tied to that project.
+
+        PARAMETERS:
+        -----------
+            cls:
+                References the class itself
+
+            input_project_id: uuid.UUID
+                The unique id of the project we are to remove
+
+        RETURNS:
+        --------
+            result: bool
+                The result of the operation. True if successful
+        """
+        result:bool = False
+
+        #Can't remove a project that doesn't exist
+        if input_project_id not in cls.__registered_events:
+            return result
+
+        for key_remove in cls.__registered_events[input_project_id].keys():
+            cls.remove_event(input_project_id,key_remove,[])
+
+        result = True
 
         return result
