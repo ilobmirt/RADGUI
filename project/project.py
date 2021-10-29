@@ -9,6 +9,8 @@ import json
 from typing import List, Dict, Any # pylint: disable=unused-import
 import bpy
 from event_manager import EventManager
+from radgui_console import Console
+from radgui_system import System
 from reference.property import RefProperty
 from .property_group_shell import PropertyGroupShell # pylint: disable=unused-import
 from .operator_shell import OperatorShell # pylint: disable=unused-import
@@ -130,6 +132,41 @@ class Project():
 
         self.value = input_dict
 
+    def __del__(self):
+        """
+        Instance uninitialization method. Cleanup and unregister everything
+        this class is connected to.
+
+        PARAMETERS:
+        -----------
+            self:
+                Refrences the instance of the class itself
+
+        RETURNS:
+        --------
+
+            None
+        """
+        #remove panels
+        remove_list: List[any] = self.panels.keys()
+        for panel_index in remove_list:
+            self.remove_panel(panel_index)
+
+        #remove operators
+        remove_list = self.operators.keys()
+        for operator_index in remove_list:
+            self.remove_operator(operator_index)
+
+        #remove property groups
+        remove_list = self.property_groups.keys()
+        for property_group_index in remove_list:
+            self.remove_property_group(property_group_index)
+
+        EventManager.unregister_project(self.__project_id)
+        Console.remove_project_id(self.__project_id)
+        System.remove_project_id(self.__project_id)
+        return
+
     @property
     def id(self) -> uuid.UUID: # pylint: disable=C0103
         """
@@ -150,7 +187,38 @@ class Project():
         return self.__project_id
 
     @property
-    def events(self) -> Dict[str,Any]:
+    def header(self) -> Dict[str,Any]:
+        """
+        """
+        result: Dict[str,Any] = {
+            "CONSOLE":self.console
+        }
+        return result
+
+    @header.setter
+    def header(self,input_value:Dict[str,Any]) -> None:
+        """
+        """
+        return
+
+    @property
+    def console(self) -> Dict[str, Any]:
+        """
+        """
+        result: Dict[str,Any] = {
+            "OUTPUT":Console.get_medium(self.__project_id),
+            "FILTER":Console.get_filter(self.__project_id)
+        }
+        return result
+
+    @console.setter
+    def console(self,input_value:Dict[str,Any]) -> None:
+        """
+        """
+        return
+
+    @property
+    def events(self) -> Dict[str,List[Dict[str,Any]]]:
         """
         Gets the status of registered events from the Event Manager
 
@@ -163,15 +231,15 @@ class Project():
         RETURNS:
         --------
 
-            result: Dict[str, Any]
+            result: Dict[str,List[Dict[str,Any]]]
                 This dictionary holds the value of registered events as it would in a JSON file
         """
-        result: Dict[str,Any] = {}
-        #result = EventManager.
+        result: Dict[str,List[Dict[str,Any]]] = {}
+        result = EventManager.get_project_value(self.__project_id)
         return result
 
     @events.setter
-    def events(self,input_attributes:Dict[str,Any]) -> None:
+    def events(self,input_attributes:Dict[str,List[Dict[str,Any]]]) -> None:
         """
         Configures the events registered with the Event Manager from a given Dictionary
 
@@ -189,6 +257,7 @@ class Project():
 
             None
         """
+        EventManager.set_project_value(self.__project_id,input_attributes)
         return
 
     @property
@@ -235,77 +304,146 @@ class Project():
             None
         """
 
-    #Add a property group
-    def create_property_group(self,**input_args) -> bool:
+    #Create a property group
+    def create_property_group(self, **input_args) -> bool:
         """
-        Creates a property group object within the project.
-        This is indexed by the scope that property group functions in.
+        Generate a property group class from the property group shell
 
         PARAMETERS:
         -----------
-
             self:
-                References the current instance of the Project class
+                References the Project instance itself.
 
             **input_args:
-                A variable list of arguments passed to this function
+                a variable list of arguments passed to it.
                 The list that this program will look at is the following...
 
-                * scope -
-                    The scope in which the property group will function in.
+                scope: str
+                    MANDATORY. The scope that this property group will exist
+                    in. Must not already exist in the project.
 
-                * attributes -
-                    If provided, the new property group will be configured by this dictionary
+                value: Dict[str,Dict[str,Any]]
+                    The starting value of the property group. This dictionary
+                    holds the variables of the property group and their
+                    properties.
 
         RETURNS:
         --------
-
-            result:bool
-                Returns if the project was able to successfully create a new project scope
+            result: bool
+                The state of the creation of a property group. True if successful.
 
         """
         result:bool = False
 
-        input_scope:str = ""
-        if "scope" in input_args:
-            input_scope = input_args["scope"]
-            input_scope = input_scope.strip().upper()
+        Console.set_filter(self.__project_id,{"project":1,"create_property_group":1})
+        Console.write(self.__project_id,f"Creating property group for project - \"{self.__project_id.hex}\"")
+        Console.set_filter(self.__project_id,{"project":2,"create_property_group":2})
 
-        input_attributes:Dict[str,Any] = {}
-        if "attributes" in input_args:
-            input_attributes = input_args["attributes"]
-
-        #We can't add to an existing property group
-        if input_scope in self.property_groups:
+        #We need the scope of the property group
+        if "scope" not in input_args:
+            Console.write(self.__project_id,"FAILURE: Scope was not provided to create property group")
             return result
 
-        #We can't proceed if scope isnt legal
-        if input_scope not in RefProperty.get_scopes():
-            return result
-
-        result = True
-        return result
-
-    #Remove a property group
-    def remove_property_group(self,input_scope: str) -> None:
-        """..."""
-        #Cleanup input for property group scope
+        input_scope:str = input_args["scope"]
         input_scope = input_scope.strip().upper()
 
-        #Only bother with the appropriate scope
-        if input_scope.upper() in self.property_groups:
-            bpy.utils.unregister_class(self.property_groups[input_scope.upper()])
-            self.property_groups.pop(input_scope.upper())
+        #The scope can't already exist
+        if input_scope in self.property_groups:
+            Console.write(self.__project_id,f"FAILURE: Property group already exists in scope - \"{input_scope}\"")
+            return result
+
+        #The scope must be a valid scope
+        if input_scope not in RefProperty.get_scopes().keys():
+            Console.write(self.__project_id,f"FAILURE: Given scope \"{input_scope}\" is not a valid scope type.")
+            return result
+
+        #Assign it an initial value if given a value
+        input_value:Dict[str,Dict[str,Any]] = {}
+        if "value" in input_args:
+            input_value = input_args["value"]
+
+        #Create the class for the scope, then register it
+        autogen_classname:str=f"PROPERTYGROUP_{input_scope}_IN_{self.__project_id.hex.upper()}"
+        autogen_attributes:Dict[str,Any] = {
+            "scope":input_scope,
+            "__project_id":self.__project_id
+        }
+        autogen_class = type(autogen_classname,(PropertyGroupShell,),autogen_attributes)
+        self.property_groups.update({input_scope:autogen_class})
+
+        if input_value is not {}:
+            self.property_groups[input_scope].value = input_value
+
+        bpy.utils.register_class(self.property_groups[input_scope])
+
+        result = True
+        Console.write(self.__project_id,f"SUCCESS: Created Class \"{autogen_classname}\" for scope \"{input_scope}\"")
+
+        return result
+
+    #Remove an existing property group
+    def remove_property_group(self,input_scope:str) -> bool:
+        """
+        Removes an already existing property group
+
+        PARAMETERS:
+        -----------
+            self:
+                References the Project instance itself.
+
+            input_scope: str
+                This is the scope we will remove.
+
+        RETURNS:
+        --------
+            result: bool
+                The state of the removal of the property group. True if successful.
+
+        """
+        result:bool = False
+        input_scope = input_scope.strip().upper()
+
+        Console.set_filter(self.__project_id,{"project":1,"remove_property_group":1})
+        Console.write(self.__project_id,f"Removing property group for scope \"{input_scope}\"")
+        Console.set_filter(self.__project_id,{"project":2,"remove_property_group":2})
+
+        if input_scope not in self.property_groups:
+            Console.write(self.__project_id,f"FAILURE: Given scope \"{input_scope}\" not associated in project \"{self.__project_id.hex.upper()}\"")
+            return result
+
+        #Unregister the class
+        bpy.utils.unregister_class(self.property_groups[input_scope])
+        self.property_groups.pop(input_scope)
+
+        result = True
+        Console.write(self.__project_id,f"SUCCESS: Removed Property Group for scope \"{input_scope}\"")
+
+        return result
 
     #Add an operator
     def create_operator(self,**input_args) -> bool:
         """
+        Creates a custom operator holding custom properties and content
 
         PARAMETERS:
         -----------
+            self:
+                References the Project instance itself.
+
+            **input_args:
+                a variable list of arguments passed to it.
+                The list that this program will look at is the following...
+
+                name: str
+                    Mandatory. The name of the operator in the project
+
+                value: Dict[str,Any]
+                    This is the starting value of the operator
 
         RETURNS:
         --------
+            result: bool
+                The state of the creation of the operator. True if successful.
 
         """
 
@@ -318,11 +456,28 @@ class Project():
 
         RETURNS:
         --------
+            result: bool
+                The state of the removal of the operator. True if successful.
 
         """
-        if input_name in self.operators:
-            bpy.utils.unregister_class(self.operators[input_name])
-            self.operators.pop(input_name)
+        result:bool = False
+        input_name = input_name.strip()
+
+        Console.set_filter(self.__project_id,{"project":1,"remove_operator":1})
+        Console.write(self.__project_id,f"Removing operator \"{input_name}\"")
+        Console.set_filter(self.__project_id,{"project":2,"remove_operator":2})
+
+        if input_name not in self.operators:
+            Console.write(self.__project_id,f"FAILURE: The operator \"{input_name}\" does not exist in project \"{self.__project_id.hex.upper()}\"")
+            return result
+
+        bpy.utils.unregister_class(self.operators[input_name])
+        self.operators.pop(input_name)
+
+        result = True
+        Console.write(self.__project_id,f"SUCCESS: Removed operator \"{input_name}\"")
+
+        return result
 
     #Add a panel
     def create_panel(self,**input_args) -> bool:
@@ -330,9 +485,17 @@ class Project():
 
         PARAMETERS:
         -----------
+            self:
+                References the Project instance itself.
+
+            **input_args:
+                a variable list of arguments passed to it.
+                The list that this program will look at is the following...
 
         RETURNS:
         --------
+            result: bool
+                The state of the creation of a panel. True if successful.
 
         """
         result:bool = False
@@ -341,14 +504,37 @@ class Project():
     #Remove a panel
     def remove_panel(self,input_name: str) -> bool:
         """
+        Removes the named panel from the project and Blender
 
         PARAMETERS:
         -----------
+            self:
+                References the instance of the class itself
+
+            input_name:str
+                The name of the panel to remove
 
         RETURNS:
         --------
+            result: bool
+                The state of the removal of the panel. True if successful.
 
         """
-        if input_name in self.panels:
-            bpy.utils.unregister_class(self.panels[input_name])
-            self.panels.pop(input_name)
+        result:bool = False
+        input_name = input_name.strip()
+
+        Console.set_filter(self.__project_id,{"project":1,"remove_panel":1})
+        Console.write(self.__project_id,f"Removing panel \"{input_name}\"")
+        Console.set_filter(self.__project_id,{"project":2,"remove_panel":2})
+
+        if input_name not in self.panels:
+            Console.write(self.__project_id,f"FAILURE: The panel \"{input_name}\" does not exist in project \"{self.__project_id.hex.upper()}\"")
+            return result
+
+        bpy.utils.unregister_class(self.panels[input_name])
+        self.panels.pop(input_name)
+
+        result = True
+        Console.write(self.__project_id,f"SUCCESS: Removed panel \"{input_name}\"")
+
+        return result
