@@ -122,6 +122,19 @@ class Console():
         cls.__output_filter[input_project_id] = input_filters
 
     @classmethod
+    def get_filter(cls,input_project_id:uuid.UUID) -> Dict[str,int]:
+        """
+        """
+        result: Dict[str,int] = {}
+
+        if input_project_id not in cls.__output_filter:
+            return result
+        
+        result = cls.__output_filter[input_project_id]
+
+        return result
+
+    @classmethod
     def set_medium(cls, input_project_id: uuid.UUID, input_medium: str, input_filename: str = "") -> None:
         """
         Sets the medium of output the project will use for output.
@@ -167,6 +180,19 @@ class Console():
             cls.__output_file[input_project_id] = input_filename
 
         cls.__output_medium[input_project_id] = input_medium
+
+    @classmethod
+    def get_medium(cls,input_project_id:uuid.UUID) -> str:
+        """
+        """
+        result:str = ""
+
+        if input_project_id not in cls.__output_medium:
+            return result
+
+        result = cls.__output_medium[input_project_id]
+
+        return result
 
     @classmethod
     def add_project_id(cls, input_project_id: uuid.UUID) -> None:
