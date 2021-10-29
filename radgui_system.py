@@ -542,6 +542,7 @@ class System():
         """
         Removes a dialog from the dialog collection.
         If it was registered, would also unregister it from Blender.
+        This is usually called by the dialogs themselves as they are executed.
 
         PARAMETERS:
         -----------
